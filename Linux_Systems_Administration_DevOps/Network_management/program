@@ -1,0 +1,19 @@
+A - Introduction
+Networking involves connecting two or more computing devices to share data. Networks combine hardware and software to enable this interconnection.
+
+In simple terms, a network is a set of computers and other hardware components connected by communication channels, allowing for the sharing of resources and information. Our Linux servers will therefore aim to communicate and be accessible via multiple network protocols.
+
+We will introduce network concepts in order to better understand the configurations needed on our Linux servers.
+
+B - TCP/IP Network
+TCP/IP stands for Transmission Control Protocol / Internet Protocol. It is a set of protocols that define how two or more computers can communicate. A protocol is a set of rules describing how data is transmitted.
+
+TCP/IP is an open standard and can be implemented on any computer with the appropriate physical components. It includes many protocols providing different essential functionalities for data exchange.
+
+A related protocol is UDP (User Datagram Protocol), which also operates over IP. The main difference is that TCP is connection-oriented, while UDP is connectionless. With TCP, a session is established between hosts and the transfer of data is guaranteed.
+
+With UDP, each data packet is sent without receipt verification or retransmission at the network level.
+
+TCP uses port numbers to identify the receiving process and sequence numbers to track the order of packets, ensuring that data is received in the correct order.
+UDP does not use sequencing. Packets are sent independently, and their reassembly occurs at the receiving application level. The protocol cannot determine which packet should arrive first. Unprocessable packets are simply discarded.
+UDP is very popular due to its speed and efficiency: it does not need to establish a connection before sending packets, which reduces latency and speeds up data transmission. It also does not require sequencing or acknowledgments, saving time.
