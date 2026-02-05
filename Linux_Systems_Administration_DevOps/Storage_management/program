@@ -55,5 +55,218 @@ You can display the contents of the file /etc/fstab with the command:
 cat /etc/fstab
 
 F - Create a partition with fdisk
+f.1 - Presentation
+The fdisk utility is used on Linux/Unix systems to manage disks via the command line. It allows you to create, display, delete, or modify partitions, providing a user-friendly interface for manipulating disks.
+
+f.2 - Usage
+In this section, we will set up the creation of partitions using the fdisk command. Let's first check the available disks to partition:
+lsblk
+
+The command lsblk with the flag -f provides information about all devices attached to the machine:
+sudo lsblk -f
+We will take the disk nvme1n1 and partition it using the fdisk utility.
+sudo fdisk /dev/nvme1n1
+
+Welcome to fdisk (util-linux 2.34).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+The old ext4 signature will be removed by a write command.
+
+Device does not contain a recognized partition table.
+Created a new DOS disklabel with disk identifier 0xfa8c1295.
+
+Command (m for help): n
+We will enter the letter n in order to create a new partition:
+
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p):
+We can enter the letter p to create a primary partition and leave the default settings:
+
+Select (default p): p
+Partition number (1-4, default 1):
+We can leave the default partition number, which is 1:
+
+First sector (2048-10485759, default 2048):
+We can leave the first sector as default:
+
+Last sector, +/-sectores o +/-tamaño{K,M,G,T,P} (2048-10485759, predeterminado 10485759):
+We can specify the size of the partition we want to create. For the size, we have the characters {K,M,G,T,P} for sizes in bytes. k for kilo, M for Mega, G for Giga, T for Tera, and P for Peta.
+
+We want a partition size of 2gb:
+
+  The entire disk will be partitioned if we do not specify a size.
+Last sector, +sectors or +size{K,M,G,T,P} (2048-10485759, default 10485759): +2G
+We have just created a partition with the specified size. We can display all our settings before saving our changes with the p option.
+
+Command (m for help): p
+Disk /dev/xvdf: 5 GiB, 5368709120 bytes, 10485760 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x3c8d63b1
+
+/dev/nvme1n1      2048  2050       3  1.5K 83 Linux
+We can now display the options menu with the option m.
+
+Command (m for help): m
+
+Help:
+
+  DOS (MBR)
+   a   toggle a bootable flag
+   b   edit nested BSD disklabel
+   c   toggle the dos compatibility flag
+
+  Generic
+   d   delete a partition
+   F   list free unpartitioned space
+   l   list known partition types
+   n   add a new partition
+   p   print the partition table
+   t   change a partition type
+   v   verify the partition table
+   i   print information about a partition
+
+  Misc
+   m   print this menu
+   u   change display/entry units
+   x   extra functionality (experts only)
+
+  Script
+   I   load disk layout from sfdisk script file
+   O   dump disk layout to sfdisk script file
+
+  Save & Exit
+   w   write table to disk and exit
+   q   quit without saving changes
+
+  Create a new label
+   g   create a new empty GPT partition table
+   G   create a new empty SGI (IRIX) partition table
+   o   create a new empty DOS partition table
+   s   create a new empty Sun partition table
+We can therefore write our configuration with the w option which allows us to write the partition table to the disk.
+
+Command (m for help): w
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+Check the drive /dev/nvme1n1 and its partitions.
+
+sudo lsblk /dev/nvme1n1
+Output display:
+
+NAME        MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+nvme1n1     259:1    0   5G  0 disk /data
+└─nvme1n1p1 259:7    0   2G  0 part
+The created partition is present and it is called nvme1n1p1.
+
+We can now set up a new mount point with a new file system in ext4:
+
+sudo mkdir -p /data
+sudo mkfs -t ext4 /dev/nvme1n1p1
+sudo mount /dev/nvme1n1p1 /data #Mounting the disk
+Let's check that everything is correct:
+
+sudo lsblk -f
+Output display:
+
+NAME         FSTYPE   LABEL           UUID                                 FSAVAIL FSUSE% MOUNTPOINT
+loop0        squashfs                                                            0   100% /snap/amazon-ssm-agent/6312
+loop1        squashfs                                                            0   100% /snap/amazon-ssm-agent/7175
+loop2        squashfs                                                            0   100% /snap/core18/2721
+loop3        squashfs                                                            0   100% /snap/core18/2632
+loop4        squashfs                                                            0   100% /snap/core20/1738
+loop5        squashfs                                                            0   100% /snap/core20/1852
+loop6        squashfs                                                            0   100% /snap/lxd/24061
+loop7        squashfs                                                            0   100% /snap/snapd/17883
+nvme0n1
+├─nvme0n1p1  ext4     cloudimg-rootfs 004c957e-b5f9-40c7-80b2-5a75eb235b98      4G    47% /
+├─nvme0n1p14
+└─nvme0n1p15 vfat     UEFI            0503-A637                              99.2M     5% /boot/efi
+nvme1n1
+└─nvme1n1p1  ext4                     b78a0d9e-5657-4e78-a8dd-4a5ded94e8c8    1.8G     0% /data_part
+nvme2n1
+
 G - Delete a partition
+We will now see how to delete partitions using the fdisk command.
+
+We cannot delete the partition because it is still in use. We need to unmount this partition before executing the operation:
+
+sudo umount /dev/nvme1n1p1
+The letter d in the fdisk menu allows you to set up the deletion of the desired partitions within our disks.
+
+Launch the fdisk utility on the drive and delete the partition /dev/nvme1n1p1.
+
+sudo fdisk /dev/nvme1n1
+We have the option d which allows us to delete partitions on a device:
+
+Command (m for help): d
+Selected partition 1
+Partition 1 has been deleted.
+We currently have only one partition, so it has been deleted by the command. We just need to write the partition tables with the w option.
+
+Command (m for help): w
+The partition table has been altered.
+Failed to remove partition 1 from system: Device or resource busy
+
+The kernel still uses the old partitions. The new table will be used at the next reboot.
+Syncing disks.
+
+Situation setup:
+
+We need to format a device (of your choice) with the file system type ext4 and attach a label datascientest.
+
+sudo mkfs.ext4 -L datascientest /dev/nvme1n1
+Output display:
+
+mke2fs 1.45.5 (07-Jan-2020)
+Creating filesystem with 524288 4k blocks and 131072 inodes
+Filesystem UUID: c3ca3faf-b75f-4061-915d-2c53dd746afc
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376, 294912
+
+Allocating group tables: done
+Writing inode tables: done
+Creating journal (16384 blocks): done
+Writing superblocks and filesystem accounting information: done
+Check the file system for this partition now.
+
+sudo blkid /dev/nvme1n1
+Output display:
+
+/dev/nvme1n1: LABEL="datascsientest" UUID="c3ca3faf-b75f-4061-915d-2c53dd746afc" TYPE="ext4" PARTUUID="3c8d63b1-01"
+
+We could also have done it differently:
+
+sudo fsck -N /dev/nvme1n1
+Output display:
+
+fsck from util-linux 2.34
+[/usr/sbin/fsck.ext4 (1) -- /dev/nvme1n1] fsck.ext4 /dev/nvme1n1
+Create a mount point /datascientest and manually mount the mount point on the partition /dev/nvme1n1 that we created using its label. Then, let's check that the device is properly mounted.
+
+We do not always want to have to manually mount a device or a partition. Usually, an administrator will want to ensure that a partition is automatically mounted after a reboot. Therefore, we will set this up. To make the mount point persistent, we need to fill in the file /etc/fstab.
+
+Open the file /etc/fstab :
+
+sudo nano /etc/fstab
+Copy the lines below:
+
+LABEL=cloudimg-rootfs   /        ext4   defaults,discard        0 1
+LABEL=UEFI      /boot/efi       vfat    umask=0077      0 1
+LABEL=datascientest /datascientest ext4 defaults 1 2  # line added to the /etc/fstab file
+We can finally validate the configuration with the command :
+
+sudo mount -a # Allows mounting all file systems mentioned in /etc/fstab
+To have the other options of the mount command, we can execute the command mount -h :
+
+sudo mount -h
+Now, the device /dev/nvme1n1 is ready to be used. We can start creating files and directories or use this device via the mount point /datascientest.
+
 H - LVM on Linux
