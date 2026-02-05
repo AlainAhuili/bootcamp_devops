@@ -17,3 +17,247 @@ With UDP, each data packet is sent without receipt verification or retransmissio
 TCP uses port numbers to identify the receiving process and sequence numbers to track the order of packets, ensuring that data is received in the correct order.
 UDP does not use sequencing. Packets are sent independently, and their reassembly occurs at the receiving application level. The protocol cannot determine which packet should arrive first. Unprocessable packets are simply discarded.
 UDP is very popular due to its speed and efficiency: it does not need to establish a connection before sending packets, which reduces latency and speeds up data transmission. It also does not require sequencing or acknowledgments, saving time.
+C - OSI Model
+c.1 - Presentation
+In networks, the data transmitted between devices is organized into packets, and the transmission process is called traffic. Packets are transmitted according to protocols, which are systems of rules governing communication.
+
+Protocols are organized in layers to structure network communication.
+
+The OSI model (Open Systems Interconnection) is a standard that divides all protocols into 7 layers. These layers govern the transmission of packets, from hardware components (such as network cards) to the applications using the network, like web browsers, Telegram, Google, or Facebook.
+
+c.2 - The layers of the OSI model
+In the table below, the different layers of the OSI model:
+
+
+Level	Layer Name
+7	Application
+6	Presentation
+5	Session
+4	Transport
+3	Network
+2	Data link
+1	Physical
+The material layers correspond to the lower layers, while the software layers correspond to the upper layers. Each upper layer is dependent on those that precede it.
+
+Here is a detailed description of the 7 OSI layers:
+
+Physical layer (1) This is the lowest layer, the farthest from the user. It converts bits into electrical, optical, or radio signals.
+This layer also defines:
+
+Voltage levels and timing changes.
+Physical data rates and transmission distances.
+Channel access and physical connectors.
+Pin layout, cable specifications, signal timing, and frequency of wireless devices.
+
+Data Link Layer (2) Controlled by the network device driver, this layer ensures control and protection of the Physical layer. It detects and corrects, if possible, transmission errors.
+The Data Link layer also manages MAC addresses, corresponding to the physical addresses of network cards.
+
+Network Layer (3) The IP protocol operates at this level. The network layer:
+
+Segment the data and limit the size of packets.
+Determine the path or route between devices.
+Encapsulate the data with source and destination information.
+Interact with routers to route the packets.
+Another important protocol at this level is ICMP (Internet Control Message Protocol), used to report errors or send operational information, such as with the ping command.
+
+However, this layer does not guarantee the correct delivery of packets nor an error report, this role being supported by the Transport layer.
+
+Transport layer (4) This layer provides protocols to ensure the reliability of transmission:
+
+TCP (Transmission Control Protocol) follows the sequence of packets, detects and reports errors, and retransmits undelivered packets.
+UDP (User Datagram Protocol) does not guarantee delivery, but allows for faster transmission.
+TCP is used for applications requiring reliability, while UDP is preferred for streaming or real-time applications.
+
+Session Layer (5) It maintains communication between connections, manages acknowledgments, ensures fault tolerance, and groups messages into unique packets.
+
+Presentation layer (6) This layer transforms the data so that it is readable by the Application layer, by converting it into a standard format.
+
+Application layer (7) The layer closest to the user, where most of the protocols used by end applications operate. Examples :
+
+HTTP / HTTPS for web servers.
+FTP for file transfer.
+SSH for secure sessions.
+These protocols will be detailed in the following chapters.
+
+We can therefore make a comparison between the OSI and TCP/IP models:
+
+
+Layer	OSI Model	TCP/IP Stack
+7	Application	Application
+6	Presentation	Application
+5	Session	Application
+4	Transport	Transport
+3	Network	Internet
+2	Data link	Network Interface
+1	Physical	Network Interface
+The main differences between the OSI and TCP/IP models are as follows:
+
+The Application, Presentation, and Session layers have been merged into a single Application layer in TCP/IP.
+The Physical and Data Link layers are also grouped together.
+In TCP/IP, the boundaries between the layers are not as rigid as in the OSI model, and the functions do not necessarily correspond directly to those of the OSI model.
+
+Knowing the layers of a network model remains useful for troubleshooting: by identifying the layer where connectivity is functioning, it is easier to narrow down the investigation to the other layers.
+
+c.3 - IP Address
+The Internet Protocol (IP) is used by private and public networks to enable communication between devices. An IP address is a unique identifier assigned to a device connected to a network.
+
+There are two types of IP addressing standards: IPv4 and IPv6.
+
+IPv4 is the most commonly used standard in businesses. IPv4 addresses are encoded on 4 bytes (32 bits).
+IPv6 uses 16 bytes (128 bits).
+Each byte can be represented in binary or in dotted decimal (decimal notation with dots separating the bytes). For example, an IPv4 address in binary:
+
+11000000.10101000.01100100.00000001
+Translates to decimal pointed by :
+
+192.168.100.1
+This notation is much more readable and is the one generally used when working with IP addresses via an Internet Service Provider (ISP).
+
+Conversion from decimal to binary
+
+
+128	64	32	16	8	4	2	1
+2⁷	2⁶	2⁵	2⁴	2³	2²	2¹	2⁰
+The numbers in the table are noted this way because each byte of an IP address is made up of 8 bits. In binary, a "bit" can only have two values, 0 or 1. To convert to binary, you need to calculate how many of each number in the segment of the table above, from left to right, corresponds to the decimal number you have for the IP address, also from left to right.
+
+Let's take our IP address above, 192.168.100.1 and convert it to binary.
+
+To convert 192 to binary, we can only have 128 according to our table, which we will subtract from 192. We are left with a remainder of 64.
+
+Once we know that the number corresponds to a value in the table above, we mark it either with a 1 for yes or a 0 for no.
+
+For our example, we had 64, in which the 64 from the table indeed fits with a remainder of 0.
+
+Therefore, our conversion would look like this:
+
+
+128	64	32	16	8	4	2	1
+1	1	0	0	0	0	0	0
+Thus 192 in binary is written as 11000000.
+
+Moving on to 168, we continue with the same formula:
+
+128 goes into 168 with a remainder of 40.
+
+64 does not go with 40 because 40 is smaller, but 32 will fit perfectly with a remainder of 8.
+
+8 does not go with 16 because it is smaller, but goes with 8 for a remainder of 0.
+
+Our conversion for 168 will therefore give:
+
+
+128	64	32	16	8	4	2	1
+1	0	1	0	1	0	0	0
+Thus 168 in binary is written as 10101000. After the entire conversion, we have 11000000.10101000.01100100.00000001. This conversion will greatly help in understanding subnets and subnet masks.
+
+c.4 - Classes of IP Addresses
+Historically, IP addresses (using the IPv4 standard) were divided into 5 classes:
+
+Class A
+Class B
+Class C
+Class D
+Class E
+They are defined as follows:
+
+
+Class	Start address	End Address
+A	0.0.0.0	127.255.255.255
+B	128.0.0.0	191.255.255.255
+C	192.0.0.0	223.255.255.255
+D	224.0.0.0	239.255.255.255
+E	240.0.0.0	255.255.255.255
+Each IP class is assigned to the Internet as such:
+
+
+Class	Usage
+A	This class is designed to be used in very large companies like [Google]
+B	This one is designed to be used in medium-sized companies
+C	Class used in small businesses.
+D	Class not used in the public sector but rather reserved for multicast addressing
+E	This class is also not used in the public sector, being rather reserved for scientific studies
+With the advent of cloud and new technologies, the classic IP addressing scheme is becoming less and less used and is tending to be replaced by CIDR (Classless Inter-Domain Routing) notation. However, the old IP classes are still commonly used in businesses to standardize the use of IP addresses. For example, class C is very common in local or internal networks.
+
+c.5 - IP Addressing
+Every host on an IP network is assigned a network number, whether on the Internet or on a private network. IP addressing belongs to layer 3 of the OSI model.
+
+The network numbering allows hosts (or peers) to communicate with each other. Hosts sharing a network can be computers located in the same office, home, or within an entire company.
+
+The addressing scheme is essential: without it, no communication is possible, as it provides a unique identification for each endpoint of the connection.
+
+IP addresses are composed of four octets (32 bits for IPv4) and are typically represented in dotted decimal notation:
+
+xxxx.xxxx.xxxx.xxxx
+where each xxxx is a number between 0 and 255. Example: 192.168.1.13
+
+c.6 - Subnet Mask
+A subnet mask is used to distinguish the network part and the host part of an IP address. It "masks" the host bits, leaving only the bits of the network ID visible, and allows for defining the size of the network.
+
+A subnet mask can be represented in binary, with all 1s on the left and all 0s on the right.
+
+The simplest way to know your subnet mask on Linux is to run the command ip addr, which displays your IP address as well as the subnet mask, often in CIDR notation.
+
+ip addr
+Output display:
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: mtu 9001 qdisc mq state UP group default qlen 1000 link/ether 06:43:eb:74:5c:c6 brd ff:ff:ff:ff:ff:ff inet 172.31.24.148/20 brd 172.31.31.255 scope global dynamic eth0 valid_lft 3587sec preferred_lft 3587sec inet6 fe80::443:ebff:fe74:5cc6/64 scope link valid_lft forever preferred_lft forever
+
+We can notice that we have two network interfaces lo and eth0:
+
+The network card eth0 has the IP address 172.31.24.148/20.
+
+/20 thus represents the subnet mask.
+
+20 is a CIDR notation for the subnet mask.
+
+The CIDR notation of 172.31.24.148/20 represents the number of network bits in the IP address.
+
+CIDR stands for Classless Inter-Domain Routing, which is an IP addressing scheme that replaces the old class-based system of A, B, and C. CIDR allows for variable-length subnet masks.
+
+CIDR has replaced the previous system based on fixed-size network classes and has gained popularity due to its flexibility and efficiency. The CIDR mask /20 can simply be written as 11111111.11111111.11110000.00000000, which gives us in decimal conversion 255.255.240.0, which is the network mask to which our Linux server belongs.
+
+11111111.11111111.11110000.00000000 means that the 1s correspond to the network address, and the 0s represent the number of available hosts on our network.
+
+
+
+Soit une adresse IP avec sa notation CIDR 172.168.2.1/25.
+
+With the tables presented, give the binary notation of the IP address above.
+
+10101100.10101000.00000010.00000001
+Calculation Details
+
+First octet :
+
+10101100 : 172 - 128 or (2^7) = 44
+10101100 : 44 - 32 or (2^5) = 12
+10101100 : 12 - 8 or (2^3) = 4
+10101100 : 4 - 4(2^3) = 0
+Second octet :
+
+10101000 : 168 - 128 or (2^7) = 40
+10101000 : 40 - 32 or (2^5) = 8
+10101000 : 8 - 8 or (2^3) = 0
+Third octet :
+
+00000010 : 2 - 2 or (2^1) = 0
+Fourth octet :
+
+00000001 : 1 - 1 or (2^0) = 0
+Provide the binary and decimal notation of the subnet mask using the conversion table
+
+# Binary
+11111111.11111111.11111111.10000000
+
+# Decimal
+255.255.255.128 or 0.0.0.128 (Wildcard Bits)
+How many theoretical addresses will be available for this network?
+
+126 hosts
+
