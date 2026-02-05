@@ -1,8 +1,59 @@
 A - Presentation
+Storage management refers to any software solution that allows for the organization and security of data. This concerns different types of hardware and systems. In their daily activities, system administrators must know how to implement storage management and ensure its monitoring, so they can intervene quickly in case of a failure.
+
+On Linux, there are two ways to partition a disk: the standard method and the LVM method.
+
 B - Partition standard
+Standard partitions are sections of a disk formatted to host files. It is a way to partition disks and drives under Linux. To list all disks and their partitions on a Linux system, you can use the command :
+lsblk
+
+A file system is the structure that allows organizing and accessing files on Linux. Many file systems exist, the most commonly used being: xfs, ext4, ext3, ext2, btrfs, and gfs2. These systems allow for the organization and management of files stored on a disk.
+
 C - The file system
+We can find out what the file system of a partition is with the command blkid :
+blkid | grep nvme0n1 # grep allows filtering the returned list to retrieve the nvme0n1 partition
+
+We can see that the file system used is indeed ext4. We can also do this with another command, fsck :
+fsck -N nvme0n1p1
+
+To create a file system on a partition, we can use the mkfs command as follows:
+mkfs.<file system type> /dev/<partition>
+
 D - Mount Points in Linux
+d.1 - Presentation
+A mount point is a specific directory or path where drives or partitions are mounted. The default mount point in Linux is /mnt. We can mount any device on this directory if we do not wish to create a mount point.
+
+We can check all the mounted drives and partitions on a Linux system with the command df :
+df -hT # The -h option is for human-readable format and the -T option allows displaying the filesystem type
+
+d.2 - Mount a device
+Once the mount point has been created, we just need to mount the drive or partition on the mount point. To do this, we can use the mount command with the following structure:
+mount /dev/<disk_or_partition> <mount_point>
+We want to mount a partition on the physical disk nvme0n1 with a mount point /admin/datascientest. To do this, we will take an existing partition: nvme0n1p1.
+Write the commands that will allow us to execute this task:
+sudo mkdir -p /admin/datascientest # We need root rights to create directories directly under the root directory /
+sudo mount /dev/nvme0n1p1 /admin/datascientest # We mount the partition /dev/nvme0n1p1 on the directory /dev/nvme0n1p1 /admin/datascientest
+We can add a label to a disk partition using the e2label command. This can be done on any disk partition of our choice:
+sudo e2label /dev/nvme0n1p1 "DATASCIENTEST"
+We can then mount the device or partition with the added label:
+sudo mount LABEL=DATASCIENTEST /admin/datascientest
+
+d.3 - Unmount a device
+As an administrator, if you want to unmount a device or a partition, use the command,
+sudo -i umount /dev/<disk or partition> # allows unmounting the device or partition as the root user
+We want to unmount a partition nvme0n1p1 connected to the mount point /admin/datascientest. What is the command that will allow us to do this?
+sudo umount /dev/nvme0n1p1
+
 E - The file /etc/fstab
+e.1 - Presentation
+The file /etc/fstab is very important in Linux, as it allows for the configuration of automatic mounting of file systems or devices at startup. The registration of file systems in this file is one of the two methods used to mount devices. During startup, the file /etc/fstab is read and the specified options are applied to mount the devices.
+
+Some parameters are set by default during system installation, while others can be specified by the administrator.
+
+e.2 - Explanations
+You can display the contents of the file /etc/fstab with the command:
+cat /etc/fstab
+
 F - Create a partition with fdisk
 G - Delete a partition
 H - LVM on Linux
