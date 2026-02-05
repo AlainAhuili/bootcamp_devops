@@ -1,0 +1,13 @@
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Python specific
+__pycache__/
+*.py[cod]
+
+# Data files (Don't upload your datasets!)
+*.csv
+*.xlsx
+*.json
+data/
