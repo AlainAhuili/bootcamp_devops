@@ -270,3 +270,490 @@ sudo mount -h
 Now, the device /dev/nvme1n1 is ready to be used. We can start creating files and directories or use this device via the mount point /datascientest.
 
 H - LVM on Linux
+h.1 - Presentation
+Managing storage and files can be complex under Linux and requires various commands to move data. Traditional storage generally consists of a physical hard drive (HDD, SSD, or NVMe), a logical partition, and a file system formatted on that partition. These three levels are therefore closely linked. However, it is difficult to extend a file system when adding a new disk, which often requires moving data from one disk to another, with a risk of data loss.
+
+The LVM (Logical Volume Manager) introduces an additional layer between physical disks and the file system, allowing file systems to be:
+
+Resized and moved online, without requiring system interruption.
+Used on a non-contiguous space on the disk.
+Named with meaningful names rather than the usual cryptic device names.
+Composed of multiple physical disks.
+h.2 - Operation
+On Linux, physical disks are automatically detected and managed by udev, the subsystem that sends events related to devices. In other words, udev detects when a device is plugged in, such as a network card, an external hard drive, or a USB stick. On these disks, we can create partitions using utilities like fdisk.
+
+
+Between partitions and file systems, LVM adds three layers: physical volumes, volume groups, and logical volumes.
+
+Physical Volume : Physical volumes correspond to the existing partitions on hard drives. They are identified as physical partitions: /dev/sda1 for the first partition of the first disk, /dev/sdb1 for the first partition of the second disk, etc.
+
+Volume Groups : Volume groups combine several physical volumes into a single pool. They can be used to extend existing logical volumes or to create new ones. Volume groups are typically named with the prefix "vg" (for example, vg-storage or vg-drives).
+
+Logical Volume : Logical volumes connect volume groups to file systems. They have a one-to-one relationship with file systems and correspond to a virtual partition within the volume group.
+
+h.3 - Advantages and Management
+LVM was designed to overcome the limitations of traditional disk management under Linux. Among its main advantages:
+
+You can reassemble the disk space while the system is running, without rebooting.
+It allows for easy distribution of data across multiple disks, even if the volume group includes several physical disks.
+The device mapper automatically manages the relationships between logical volumes and physical disks, simplifying the expansion or reduction of file systems, as well as the transfer of data from one device to another.
+By default, LVM is installed on recent Linux systems. If necessary, it can be installed via your preferred package manager:
+
+sudo apt install lvm2 -y
+h.3.1 - Display existing physical volumes
+To display the existing storage devices under Linux, we can execute the command lvmdiskscan:
+
+sudo lvmdiskscan
+Output display:
+
+  /dev/nvme1n1    [       5.00 GiB]
+  /dev/loop0      [     <24.39 MiB]
+  /dev/nvme0n1    [       8.00 GiB]
+  /dev/nvme2n1    [       5.00 GiB]
+  /dev/loop2      [     <55.61 MiB]
+  /dev/nvme0n1p1  [       7.89 GiB]
+  /dev/loop3      [      55.61 MiB]
+  /dev/nvme0n1p14 [       4.00 MiB]
+  /dev/loop4      [      63.28 MiB]
+  /dev/nvme0n1p15 [     106.00 MiB]
+  /dev/loop5      [     <49.84 MiB]
+  /dev/loop6      [     <63.32 MiB]
+  /dev/loop7      [     <53.24 MiB]
+  /dev/loop8      [      91.83 MiB]
+  /dev/loop9      [     <24.35 MiB]
+  0 disks
+  15 partitions
+  0 LVM physical volume whole disks
+  0 LVM physical volumes
+We can see how many physical volumes LVM are created on our system. In our case, we do not have any physical volumes created yet.
+
+ it is an important point of LVM flexibility: you can create physical volumes from entire disks or partitions of those disks.
+
+ h.3.2 - Creation of physical volumes
+
+Creating new physical volumes under Linux is quite simple: we can execute the command pvcreate and specify the underlying physical devices to create:
+
+pvcreate <device_1> <device_2> ... <device_n>
+In our case, we want to create a physical volume for the second disk connected to our host, which is nvme2n1, we can proceed as follows:
+
+sudo pvcreate /dev/nvme2n1
+Output display:
+
+WARNING: dos signature detected on /dev/nvme2n1 at offset 510. Wipe it? [y/n]: y
+  Wiping dos signature on /dev/nvme2n1.
+  Physical volume "/dev/nvme2n1" successfully created.
+We can see that our physical volume /dev/nvme2n1 has just been created.
+
+Context Setting:
+
+To verify this, run the command again that allows us to display the list of disks:
+
+sudo lvmdiskscan
+Output display:
+
+...
+  0 LVM physical volume whole disks
+  1 LVM physical volume
+We note that we have 1 existing physical disk.
+
+  We will not be able to create physical volumes from devices that are already mounted on our system. Therefore, svdf1 (which usually stores the root partition) cannot be transferred to LVM. It is also possible to convert disk partitions into physical volumes. This can be very useful for more flexible management of our storage.
+As we can see, our host automatically detects that an entire disk is formatted as an LVM physical volume and is ready to be added to a volume group.
+
+We can also use the command pvs which will allow us to list the physical volumes present on the system.
+
+sudo pvs
+Output display:
+
+  PV         VG Fmt  Attr PSize PFree
+  /dev/nvme2n1    lvm2 ---  5.00g 5.00g
+We can also retrieve the details of this physical volume with the command pvdisplay followed by the name of the physical volume:
+
+sudo pvdisplay /dev/nvme2n1
+Output display:
+
+  --- Physical volume ---
+  PV Name               /dev/xvdf
+  VG Name               datascientest_vg1
+  PV Size               5.00 GiB / not usable 4.00 MiB
+  Allocatable           yes
+  PE Size               4.00 MiB
+  Total PE              1279
+  Free PE               1279
+  Allocated PE          0
+  PV UUID               ktGDio-4Fux-0whr-t3sq-cIPg-4H6B-MwdIjM
+Situation setup:
+
+We want to partition the remaining disk /dev/nvme2n1 into two (one partition of 2GB and another of 2GB) in order to create two physical volumes from these partitions. Therefore, we first need to create the requested partitions and then create the physical volumes.
+
+We can already list our disks to confirm that the disk /dev/nvme2n1 is indeed the present disk.
+
+sudo lsblk
+Output display:
+
+NAME         MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+loop0          7:0    0 24.4M  1 loop /snap/amazon-ssm-agent/6312
+loop2          7:2    0 55.6M  1 loop /snap/core18/2697
+loop3          7:3    0 55.6M  1 loop /snap/core18/2721
+loop4          7:4    0 63.3M  1 loop /snap/core20/1822
+loop5          7:5    0 49.9M  1 loop /snap/snapd/18596
+loop6          7:6    0 63.3M  1 loop /snap/core20/1852
+loop7          7:7    0 53.2M  1 loop /snap/snapd/18933
+loop8          7:8    0 91.9M  1 loop /snap/lxd/24061
+loop9          7:9    0 24.4M  1 loop /snap/amazon-ssm-agent/7175
+nvme1n1      259:0    0    5G  0 disk /datascientest
+nvme0n1      259:1    0    8G  0 disk
+├─nvme0n1p1  259:3    0  7.9G  0 part /
+├─nvme0n1p14 259:4    0    4M  0 part
+└─nvme0n1p15 259:5    0  106M  0 part /boot/efi
+nvme2n1      259:2    0    5G  0 disk
+We can then move on to disk partitioning. Create a 2Gb partition.
+
+sudo fdisk /dev/nvme2n1
+Option n :
+
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p):
+Leave the p option as default:
+
+Select (default p):
+
+Using default response p.
+Partition number (1-4, default 1):
+First sector (2048-10485759, default 2048):
+Enter the value +2G to specify the size of the first partition we want to create:
+
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-10485759, default 10485759): +2G
+
+Created a new partition 1 of type 'Linux' and of size 2 GiB.
+We have just created our first partition. Repeat the steps to create the second partition of 2Gb.
+
+We can write the partition table by specifying this time the letter w.
+
+Command (m for help): w
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+We can redo the verification to validate the presence of the created partitions.
+
+sudo lsblk
+We can see that the partitions nvme2n1p1 and nvme2n1p2 are indeed present. All that remains is to create our physical volumes.
+
+sudo pvcreate /dev/nvme2n1p1
+sudo pvcreate /dev/nvme2n1p2
+We can now check the physical volumes present:
+
+sudo pvs
+Output display:
+
+  PV             VG Fmt  Attr PSize PFree
+  /dev/nvme2n1p1    lvm2 ---  2.00g 2.00g
+  /dev/nvme2n1p2    lvm2 ---  2.00g 2.00g
+h.4 - volume groups
+Currently, we do not have any volume groups present on our system. We can display the list of existing volume groups with the command vgs :
+
+sudo vgs
+We do not have any output display, which means we do not have a volume group at the moment.
+
+Create a volume group
+
+to set up the creation of a volume group, we have the command vgcreate:
+
+vgcreate <volume_name> <pv1> <pv2> <pv_n>
+We are going to create a volume group that will aggregate our different physical volumes:
+
+sudo vgcreate datascientest_vg1 /dev/nvme2n1p1 /dev/nvme2n1p2
+Output display:
+
+Volume group "datascientest_vg1" successfully created
+Let's display the list of existing volume groups again:
+
+sudo vgs
+Output display:
+
+  VG                #PV #LV #SN Attr   VSize VFree
+  datascientest_vg1   2   0   0 wz--n- 3.99g 3.99g
+We have seven different columns in the output:
+
+VG : describing the name of the volume group on the host;
+
+PV : displays the number of physical volumes available in the volume group;
+
+LV : likewise, the number of logical volumes created from the volume group;
+
+SN : number of snapshots created from logical volumes ;
+
+Attr : describing the attributes of the volume group (w for writable, z for resized, and n for _"normal"_) ;
+
+VSize : the size of the volume in GB of the volume group;
+
+VFree : the available space on the volume group
+
+To display information about the volume group, we also have the command vgdisplay which will be useful.
+
+sudo vgdisplay datascientest_vg1
+Output display:
+
+  --- Volume group ---
+  VG Name               datascientest_vg1
+  System ID
+  Format                lvm2
+  Metadata Areas        3
+  Metadata Sequence No  1
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                0
+  Open LV               0
+  Max PV                0
+  Cur PV                3
+  Act PV                3
+  VG Size               <9.99 GiB
+  PE Size               4.00 MiB
+  Total PE              2557
+  Alloc PE / Size       0 / 0
+  Free  PE / Size       2557 / <9.99 GiB
+  VG UUID               ErPb2q-3QRZ-rKLR-yFTx-3G6E-ZxSn-EyfUeC
+The available space in a volume group corresponds to the aggregation of the free spaces of all the physical volumes that make it up. Logical volumes allow us to create small storage units from this pool, which we can use to organize our different data.
+
+h.5 - Logical Volumes
+Logical volumes are virtual partitions carved out of volume groups. They are then formatted and mounted as file systems. In practice, logical volumes function like pseudo-partitions.
+
+To create a logical volume in a volume group, the lvcreate command is used by specifying:
+
+The name of the logical volume.
+The volume group to which it belongs.
+In order to specify the space to be taken, we need to use the -L option and specify a size (composed of a number and its unit):
+
+sudo lvcreate -L <size> <volume_group>
+If we want to give a name to our logical volume, you can use the -n option:
+
+sudo lvcreate -n <name> -L <size> <volume_group>
+Situation Setup:
+
+Let's now create our first logical volume of 1G called datascientest_lv1 created from our volume group:
+
+sudo lvcreate -n datascientest_lv1 -L 1G datascientest_vg1
+Output display:
+
+Logical volume "datascientest_lv1" created.
+Once again, we can display the list of our newly created logical volumes by executing the command lvs as sudo:
+
+sudo lvs
+When executing the command lvs, several columns appear:
+
+LV : name of the logical volume.
+VG : volume group to which the logical volume belongs.
+Attr : attributes of the logical volume (w for writable, i for inherited, a for allocated).
+LSize : size of the logical volume, in Gio.
+Other columns provide advanced information about LVM, such as the configuration of mirrored or striped spaces. When creating a logical volume, certain operations are performed automatically by the kernel:
+
+A virtual device is created in /dev: in a folder named after the volume group (vg_1), a logical device is created with the name of the logical volume (lv_1).
+The virtual device dm-0 is also available in /dev. It serves as a mapping between logical volumes and physical disks (/dev/sda, /dev/sdb).
+h.6 - Formatting and Mounting Logical Volumes
+The last step to use a logical volume is to format and mount it. To format a logical volume, the mkfs command is used by specifying the desired file system, and the logical volume can be mounted in a directory of your choice to make the space available for data storage:
+
+mkfs -t <file_system_type> <logical_volume>
+In our case, let's assume we want to format our logical volume as an "ext4" file system, we would execute the following command
+
+sudo mkfs -t ext4 /dev/datascientest_vg1/datascientest_lv1
+Output display:
+
+mke2fs 1.45.5 (07-Jan-2020)
+Creating filesystem with 262144 4k blocks and 65536 inodes
+Filesystem UUID: 7ec03f09-1909-41dd-ab07-58cd449b936c
+Superblock backups stored on blocks:
+        32768, 98304, 163840, 229376
+Allocating group tables: done Writing inode tables: done Creating journal (8192 blocks): done Writing superblocks and filesystem accounting information: done
+
+  The structure for the path of a logical volume is /dev/nom_du_vg/nom_du_lv
+Now that the logical volume is formatted, we just need to mount it on a folder in our system.
+
+We now need to mount the logical volume datascientest_vg1-datascientest_lv1 on the mount point /mnt:
+
+sudo mount /dev/datascientest_vg1/datascientest_lv1 /mnt
+We can then check if the assembly has been done correctly:
+
+sudo lsblk
+Output display:
+
+NAME                                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+loop0                                     7:0    0 24.4M  1 loop /snap/amazon-ssm-agent/6312
+loop1                                     7:1    0 24.4M  1 loop /snap/amazon-ssm-agent/7175
+loop2                                     7:2    0 55.6M  1 loop /snap/core18/2632
+loop3                                     7:3    0 63.2M  1 loop /snap/core20/1738
+loop4                                     7:4    0 49.6M  1 loop /snap/snapd/17883
+loop5                                     7:5    0 63.3M  1 loop /snap/core20/1852
+loop6                                     7:6    0 55.6M  1 loop /snap/core18/2721
+loop7                                     7:7    0 91.9M  1 loop /snap/lxd/24061
+nvme0n1                                 259:0    0    8G  0 disk
+├─nvme0n1p1                             259:2    0  7.9G  0 part /
+├─nvme0n1p14                            259:3    0    4M  0 part
+└─nvme0n1p15                            259:4    0  106M  0 part /boot/efi
+nvme1n1                                 259:1    0    5G  0 disk
+nvme2n1                                 259:5    0    5G  0 disk
+├─nvme2n1p1                             259:9    0    2G  0 part
+│ └─datascientest_vg1-datascientest_lv1 253:0    0    1G  0 lvm  /mnt # Mounted
+└─nvme2n1p2
+We can see that the directory mnt is indeed used as a mount point for the logical volume datascientest_vg1-datascientest_lv1.
+
+We can now use our logical volume to store our various information.
+
+h.7 - Extension of existing file systems
+It is also possible to create a new physical volume and add it to the existing volume group datascientest_vg1. The command vgextend allows us to achieve this goal. The syntax for this command is quite simple.
+
+vgextend datascientest_vg1 /dev/xvdh1 # allows the new PV /dev/xvdh1 to be added to the VG datascientest_vg1
+Our logical volume currently has only 1G, and we can also increase its size to take some available space in the pool. To increase the size of our logical volume, we need to use the lvextend command, specify the logical volume, and the size to take with the "-L" option.
+
+lvextend -L +1G dev/groupe_de_volume/volume_logique # -L used for size allows you to define the size and +1G specifies an addition of 1G of space
+Situation Setup:
+
+We want to increase the logical volume datascientest_lv1 by 2Gio.
+
+What command would allow to set up this requirement?
+
+sudo lvextend -L +2G /dev/datascientest_vg1/datascientest_lv1
+Output display:
+
+  Size of logical volume datascientest_vg1/datascientest_lv1 changed from 1.00 GiB (256 extents) to 3.00 GiB (768 extents).
+  Logical volume datascientest_vg1/datascientest_lv1 successfully resized.
+We can now check the new size of our logical volume:
+
+sudo lvdisplay /dev/datascientest_vg1/datascientest_lv1
+Output display:
+
+  --- Logical volume ---
+  LV Path                /dev/datascientest_vg1/datascientest_lv1
+  LV Name                datascientest_lv1
+  VG Name                datascientest_vg1
+  LV UUID                mLe0XC-xLJy-m0CU-W3Qn-sFED-u135-L7M1DQ
+  LV Write Access        read/write
+  LV Creation host, time ip-172-31-27-51, 2023-04-26 13:27:56 +0000
+  LV Status              available
+  # open                 1
+  LV Size                3.00 GiB
+  Current LE             768
+  Segments               2
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+  Block device           253:0
+The new size is indeed 3GiB.
+
+As you can see, the size of the logical volume has changed, as well as the number of physical extents allocated to it.
+
+However, increasing a logical volume does not automatically change the size of the file system. To ensure that the file system fully occupies the additional space, you need to use the resize2fs command specifying the logical volume to extend. For example:
+
+resize2fs /dev/datascientest_vg1/datascientest_lv1
+Before executing this command, it is recommended to check the current size of the file system. Then, you can adjust the file system to match the actual size of the logical volume.
+
+sudo df -h
+Output display:
+
+Filesystem                                       Size  Used Avail Use% Mounted on
+/dev/root                                        7.6G  3.6G  4.0G  48% /
+devtmpfs                                         1.9G     0  1.9G   0% /dev
+tmpfs                                            1.9G     0  1.9G   0% /dev/shm
+tmpfs                                            388M  916K  387M   1% /run
+tmpfs                                            5.0M     0  5.0M   0% /run/lock
+tmpfs                                            1.9G     0  1.9G   0% /sys/fs/cgroup
+/dev/loop1                                        25M   25M     0 100% /snap/amazon-ssm-agent/7175
+/dev/loop0                                        25M   25M     0 100% /snap/amazon-ssm-agent/6312
+/dev/loop2                                        56M   56M     0 100% /snap/core18/2632
+/dev/loop3                                        64M   64M     0 100% /snap/core20/1738
+/dev/loop4                                        50M   50M     0 100% /snap/snapd/17883
+/dev/loop7                                        92M   92M     0 100% /snap/lxd/24061
+/dev/loop6                                        56M   56M     0 100% /snap/core18/2721
+/dev/loop5                                        64M   64M     0 100% /snap/core20/1852
+/dev/nvme0n1p15                                  105M  5.2M  100M   5% /boot/efi
+tmpfs                                            388M     0  388M   0% /run/user/1000
+/dev/mapper/datascientest_vg1-datascientest_lv1  974M   24K  907M   1% /mnt
+The size of the file system of /dev/mapper/datascientest_vg1-datascientest_lv1 is currently at 1G, let's proceed with the adjustment.
+
+sudo resize2fs /dev/datascientest_vg1/datascientest_lv1
+Output display:
+
+resize2fs 1.45.5 (07-Jan-2020)
+Filesystem at /dev/datascientest_vg1/datascientest_lv1 is mounted on /mnt; on-line resizing required
+old_desc_blocks = 1, new_desc_blocks = 1
+The filesystem on /dev/datascientest_vg1/datascientest_lv1 is now 786432 (4k) blocks long.
+We can now inspect the size of our file system: it has been enlarged to match the size of our logical volume.
+
+ df -h
+Filesystem                                       Size  Used Avail Use% Mounted on
+/dev/root                                        7.6G  1.7G  5.9G  23% /
+devtmpfs                                         2.0G     0  2.0G   0% /dev
+tmpfs                                            2.0G     0  2.0G   0% /dev/shm
+tmpfs                                            393M  900K  392M   1% /run
+tmpfs                                            5.0M     0  5.0M   0% /run/lock
+tmpfs                                            2.0G     0  2.0G   0% /sys/fs/cgroup
+/dev/loop0                                        26M   26M     0 100% /snap/amazon-ssm-agent/5656
+/dev/loop1                                        25M   25M     0 100% /snap/amazon-ssm-agent/6312
+/dev/loop2                                        56M   56M     0 100% /snap/core18/2566
+/dev/loop3                                        64M   64M     0 100% /snap/core20/1623
+/dev/loop6                                        68M   68M     0 100% /snap/lxd/22753
+/dev/loop5                                        56M   56M     0 100% /snap/core18/2620
+/dev/loop4                                        64M   64M     0 100% /snap/core20/1695
+/dev/loop7                                        48M   48M     0 100% /snap/snapd/17336
+/dev/loop8                                        48M   48M     0 100% /snap/snapd/16778
+/dev/xvda15                                      105M  5.2M  100M   5% /boot/efi
+tmpfs                                            393M     0  393M   0% /run/user/1000
+/dev/mapper/datascientest_vg1-datascientest_lv1  4.0G   24K  3.8G   1% /mnt
+We were therefore able to carry out all these operations without having to restart our server.
+
+h.8 - Reducing the size of the file system
+Now that we have seen how we can easily extend existing file systems, let's see how we can reduce them.
+
+Before reducing a logical volume, we must ensure that we have available space on the logical volume.
+
+df -h
+Output display:
+
+Filesystem                                       Size  Used Avail Use% Mounted on
+/dev/root                                        7.6G  3.6G  4.0G  48% /
+devtmpfs                                         1.9G     0  1.9G   0% /dev
+tmpfs                                            1.9G     0  1.9G   0% /dev/shm
+tmpfs                                            388M  916K  387M   1% /run
+tmpfs                                            5.0M     0  5.0M   0% /run/lock
+tmpfs                                            1.9G     0  1.9G   0% /sys/fs/cgroup
+/dev/loop1                                        25M   25M     0 100% /snap/amazon-ssm-agent/7175
+/dev/loop0                                        25M   25M     0 100% /snap/amazon-ssm-agent/6312
+/dev/loop2                                        56M   56M     0 100% /snap/core18/2632
+/dev/loop3                                        64M   64M     0 100% /snap/core20/1738
+/dev/loop4                                        50M   50M     0 100% /snap/snapd/17883
+/dev/loop7                                        92M   92M     0 100% /snap/lxd/24061
+/dev/loop6                                        56M   56M     0 100% /snap/core18/2721
+/dev/loop5                                        64M   64M     0 100% /snap/core20/1852
+/dev/nvme0n1p15                                  105M  5.2M  100M   5% /boot/efi
+tmpfs                                            388M     0  388M   0% /run/user/1000
+/dev/mapper/datascientest_vg1-datascientest_lv1  3.0G   24K  2.8G   1% /mnt
+We therefore have 2.8G of free space. We can proceed with the reduction using the command lvreduce. To reduce the size of a logical volume, you must specify the size with the -L option as well as the name of the logical volume.
+
+sudo lvreduce -L <size> <logical_volume>
+Situation setup:
+
+We now want to reduce our logical volume /dev/datascientest_vg1/datascientest_lv1 to 2G. Let's execute the command that allows us to do this.
+
+sudo lvreduce -L 2G /dev/datascientest_vg1/datascientest_lv1
+Output display:
+
+  WARNING: Reducing active and open logical volume to 2.00 GiB.
+  THIS MAY DESTROY YOUR DATA (filesystem etc.)
+Do you really want to reduce datascientest_vg1/datascientest_lv1? [y/n]: y
+  Size of logical volume datascientest_vg1/datascientest_lv1 changed from 3.00 GiB (768 extents) to 2.00 GiB (512 extents).
+  Logical volume datascientest_vg1/datascientest_lv1 successfully resized.
+  This operation is not without risks: reducing a logical volume can lead to **loss of existing data**. Before any manipulation, it is necessary to unmount the file system with the command :
+umount /path/to/volume
+The command `lvremove` also allows you to **remove logical volumes**. The complete documentation for LVM is available at this link.
+After these operations, the freed space is reallocated to the volume group and can be used to create another logical volume on the system.
+
+We have thus discovered LVM (Logical Volume Manager) and its usefulness for easily configuring flexible storage space on a host.
+
+We also learned the difference between:
+
+Physical volumes
+Volume groups
+Logical volumes
+and how these components can be combined to easily enlarge or reduce file systems.
