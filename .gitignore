@@ -6,8 +6,3 @@
 __pycache__/
 *.py[cod]
 
-# Data files (Don't upload your datasets!)
-*.csv
-*.xlsx
-*.json
-data/
