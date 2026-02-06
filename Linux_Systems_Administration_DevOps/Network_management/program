@@ -746,3 +746,804 @@ cat /etc/hostname
 Output display:
 
 datascientest
+
+c.17 - Routing
+Routing is the mechanism that allows the selection of paths in a network to route data from a sender to one or more recipients.
+
+A routing table is a file or structure that contains information about the paths to take to transfer packets to their destination. It acts like a map used by devices and routers to direct traffic. For example, if we want to reach the site google.fr, the routing table indicates which router (or gateway) the traffic should pass through.
+
+The router used to reach the destination network is called a gateway. The packets that traverse each router until the final destination go through several hops, with the gateway being the first hop. In hop-by-hop routing, each packet uses the routing table of the current hop to reach the next hop.
+
+With the route or ip route commands, it is possible to communicate with different subnets and networks, or even block certain flows by modifying the routing table.
+
+The modern command ip route replaces the old command route, still used by some administrators.
+
+Example to display the configured routes:
+
+ip route
+Typical output:
+
+default via 172.31.16.1 dev eth0 proto dhcp src 172.31.24.148 metric 100
+172.31.16.0/20 dev eth0 proto kernel scope link src 172.31.24.148
+172.31.16.1 dev eth0 proto dhcp scope link src 172.31.24.148 metric 100
+In this example:
+
+The default gateway is 172.31.16.1, which is the router used to reach other networks, such as the Internet.
+The server automatically knows its local network (172.31.16.0/20) and the route to the gateway.
+The command ip r provides exactly the same output:
+
+ip r
+default via 172.31.16.1 dev eth0 proto dhcp src 172.31.24.148 metric 100
+172.31.16.0/20 dev eth0 proto kernel scope link src 172.31.24.148
+172.31.16.1 dev eth0 proto dhcp scope link src 172.31.24.148 metric 100
+Suppose now that we are connected to a large network with several subnets. Our router only provides access to the network 172.31.16.0, but we want to access the network 10.0.0.x. If this network is not present in the routing table, we need to add a specific route to this network by specifying the appropriate gateway.
+
+The general syntax for adding a route to a specific network is:
+
+sudo ip route add [network]/[mask] via [gateway] dev [interface]
+Example to add access to the network 10.0.0.0/24 via the gateway 172.31.16.1 on the interface eth0:
+
+sudo ip route add 10.0.0.0/24 via 172.31.16.1 dev eth0
+This command allows the server to send packets destined for the 10.0.0.x network through the specified gateway:
+
+sudo ip route add default via 172.31.16.1 # here 172.31.16.1 is our default gateway
+If we want to apply the default gateway for a specific interface, we use the following syntax:
+
+sudo ip route add default dev eth0 # we associate the default gateway with our device (device) eth0
+To remove a default gateway, we can execute the following command.
+
+sudo ip route delete default
+There are different types of routing: static, dynamic, and default. All are explained in detail in the second part of this course.
+
+  Don't hesitate to check the command manual page available at this address.
+
+c.18 - The netcat command
+All computers or devices connected to a network are identified by an IP address. This address is necessary to locate and reach devices within a network.
+
+In addition to the IP address, each device has ports at the software level. You can imagine a computer like a house:
+
+The IP is the address of the house.
+The ports are the different doors through which traffic can enter or exit.
+A computer system has 65,536 ports in total, although most remain unused. Each port can serve a specific service. For example:
+
+Port 80 is used by the HTTP protocol.
+Port 443 is used by HTTPS, the secure version of HTTP.
+The user can modify these ports and make a service accessible on a different port. For example, it is common to change the 22 port of SSH to avoid automated scans targeting default ports.
+
+It is therefore essential to know how to check which ports are open, closed, or sending or receiving traffic. This practice is useful for:
+
+Diagnose network issues.
+Check security before an attacker attempts to exploit a vulnerability.
+Tool: Netcat (nc)
+The Netcat tool allows you to test port openings and create simple network connections.
+
+Basic Syntax :
+nc [<options>] <host> <port>
+<host> : IP address or hostname of the target.
+<port> : port number or service name.
+Operating modes :
+Connection mode
+
+Netcat works as a client.
+Requires providing the parameters <host> and <port>.
+Listening mode
+
+Netcat functions as a server.
+If <host> is omitted, Netcat listens on all available addresses for the specified port.
+By default, without any additional options, Netcat attempts to initiate a TCP connection to the provided host and port.
+
+Netcat (nc) Command Options
+
+The table below describes the common options for the nc command:
+
+
+Option	Mode	Description
+-4	Protocol	Use IPv4 only.
+-6	Protocol	Use IPv6 only.
+-U  --unixsock	Protocol	Use Unix domain sockets.
+-u  --udp	Protocol	Use UDP connection.
+-g	Connection mode	Set hops for loose source routing in IPv4. Hops are IP addresses or hostnames.
+-p   --source-port	Connection mode	Bind the Netcat source port to the specified port.
+-s  --source  	Connection mode	Bind the Netcat host to the specified host.
+-l --listen	Listening mode	Listen for connections instead of using connection mode.
+-k --keep-open	Listening mode	Keeps the connection open for multiple simultaneous connections.
+-v --verbose	Output	Sets the verbosity level. Use multiple times to increase verbosity.
+-z	Output	Report the connection status without establishing a connection.
+To have a more complete list, refer to the manual of the netcat command.
+
+man netcat
+To install Netcat on Debian-based Linux distributions, run the following command:
+
+sudo apt install netcat -y # the -y flag allows the command to execute without confirmation
+Once installed, run nc (or netcat) followed by the options -zvn, the IP address, and the port to scan. Let's execute the command to check port _22_ (ssh) of our local machine (127.0.0.1):
+
+nc -zvn 127.0.0.1 22
+Output display:
+
+Connection to 127.0.0.1 22 port [tcp/*] succeeded!
+As you can see in the output, port 22 is open. We can also specify many ports to scan. In the following example, ports 21, 443, and 80 are checked.
+
+nc -zvn 127.0.0.1 21 443 80
+Output display:
+
+nc: connect to 127.0.0.1 port 21 (tcp) failed: Connection refused
+nc: connect to 127.0.0.1 port 443 (tcp) failed: Connection refused
+Connection to 127.0.0.1 80 port (tcp) failed: Connection refused
+Port 80 is therefore open while ports 21 and 443 are closed. By implementing a hyphen, you can specify a range of ports. Let's analyze, for example, all ports between 80 and 443.
+
+nc -z -v -w 5 datascientest.fr 80-443
+Output display:
+
+Connection to 127.0.0.1 80 port [tcp/*] succeeded!
+nc: connect to 127.0.0.1 port 81 (tcp) failed: Connection refused
+nc: connect to 127.0.0.1 port 82 (tcp) failed: Connection refused
+nc: connect to 127.0.0.1 port 83 (tcp) failed: Connection refused
+...
+...
+nc: connect to 127.0.0.1 port 443 [tcp/*] succeeded!
+
+c.19 - Nmap
+Nmap (Network Mapper) is the most widely used tool for scanning ports and detecting vulnerabilities on systems or networks. It also allows for discovering hosts to map and analyze networks.
+
+Using the NSE (Nmap Scripting Engine), Nmap can also detect security flaws or vulnerabilities on a target. This allows for issues to be fixed before an attacker can exploit them.
+
+During a port scan with Nmap, each port can be in one of six states:
+
+Open : The port is open and a service is active and listening.
+Closed : The port is closed and does not accept any connections.
+Filtered : The port is blocked by a firewall or filtering device, Nmap cannot determine its actual state.
+Not filtered : The port is not filtered, but Nmap could not determine if it is open or closed.
+Open|filtered : Nmap cannot distinguish whether the port is open or filtered.
+Closed|filtered : Nmap cannot distinguish whether the port is closed or filtered.
+We can install nmap with the following command:
+
+sudo apt install nmap -y
+To perform a basic analysis on google.fr, let's execute the following command:
+
+nmap google.fr
+Output display:
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-21 06:51 UTC
+Nmap scan report for google.fr (142.250.178.3)
+Host is up (0.0045s latency).
+Other addresses for google.fr (not scanned): 2a00:1450:4009:821::2003
+rDNS record for 142.250.178.3: lhr48s27-in-f3.1e100.net
+Not shown: 998 filtered ports
+PORT    STATE SERVICE
+80/tcp  open  http
+443/tcp open  https
+
+Nmap done: 1 IP address (1 host up) scanned in 4.47 seconds
+Nmap found that ports and protocols 80, 443 are open with services listening. All are web-related protocols: http, https. We can also specify IP addresses instead of domain names or hosts:
+
+nmap 127.0.0.1
+Output display:
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-21 06:53 UTC
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.00058s latency).
+Not shown: 996 closed ports
+PORT     STATE SERVICE
+22/tcp   open  ssh
+80/tcp   open  http
+3306/tcp open  mysql
+8080/tcp open  http-proxy
+Nmap can discover all active hosts within a network. To discover the hosts, run nmap followed by the flags -sP in which all devices connected to the network 172.31.24.148/20 are discovered.
+
+nmap -sP 172.31.24.148/20
+Output display:
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-21 06:55 UTC
+Nmap scan report for ip-172-31-24-148.eu-west-2.compute.internal (172.31.24.148)
+Host is up (0.00038s latency).
+Nmap done: 4096 IP addresses (1 host up) scanned in 103.73 seconds
+As you can see, a host or a device has been discovered, and it is our server. We can also use a wildcard character * called wildcard to find all IP addresses belonging to the network.
+
+nmap -sP 172.31.24.*
+To analyze a specific port to check if it is open or closed, we use the -p (port) indicator followed by the port and the URL or host to analyze.
+
+Context Setting:
+
+Scan the port 80 of the site datascientest.fr :
+
+nmap -p 80 datascientest.fr
+Output display:
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-21 07:04 UTC
+Nmap scan report for datascientest.fr (52.209.254.47)
+Host is up (0.012s latency).
+rDNS record for 52.209.254.47: ec2-52-209-254-47.eu-west-1.compute.amazonaws.com
+
+PORT   STATE SERVICE
+80/tcp open  http
+
+Nmap done: 1 IP address (1 host up) scanned in 0.07 seconds
+We can also specify a range of ports to scan:
+
+nmap -p 21-25 127.0.0.1 # We are scanning from port 21 to port 25 of our local machine
+nmap -p 21-25 127.0.0.1 # We are scanning from port 21 to port 25 of our local machine
+Output display:
+
+Starting Nmap 7.80 ( https://nmap.org ) at 2022-11-21 07:08 UTC
+Nmap scan report for localhost (127.0.0.1)
+Host is up (0.00013s latency).
+
+PORT   STATE  SERVICE
+21/tcp closed ftp
+22/tcp open   ssh
+23/tcp closed telnet
+24/tcp closed priv-mail
+25/tcp closed smtp
+
+Nmap done: 1 IP address (1 host up) scanned in 0.04 seconds
+
+
+c.20 - IPTABLES
+The command iptables allows you to configure the tables of the firewall integrated into the Linux kernel, as well as the chains and rules they contain. It is used to control and filter incoming or outgoing network traffic on a Linux system.
+
+The iptables module only manages IPv4 traffic. To manage firewall rules on IPv6 connections, you must use ip6tables, which has an identical syntax to that of iptables.
+
+List the current rules
+
+Servers do not implement any restrictions by default; however, we can check the current iptables rules using the command:
+
+sudo iptables -L
+We receive as output a list of three strings, input, forward, and output :
+
+Chain INPUT (policy DROP) # input chain
+target     prot opt source               destination
+ufw-before-logging-input  all  --  anywhere             anywhere
+ufw-before-input  all  --  anywhere             anywhere
+ufw-after-input  all  --  anywhere             anywhere
+ufw-after-logging-input  all  --  anywhere             anywhere
+ufw-reject-input  all  --  anywhere             anywhere
+ufw-track-input  all  --  anywhere             anywhere
+
+Chain FORWARD (policy DROP)  # forward chain
+target     prot opt source               destination
+ufw-before-logging-forward  all  --  anywhere             anywhere
+ufw-before-forward  all  --  anywhere             anywhere
+ufw-after-forward  all  --  anywhere             anywhere
+ufw-after-logging-forward  all  --  anywhere             anywhere
+ufw-reject-forward  all  --  anywhere             anywhere
+ufw-track-forward  all  --  anywhere             anywhere
+
+Chain OUTPUT (policy ACCEPT)  # output chain
+target     prot opt source               destination
+ufw-before-logging-output  all  --  anywhere             anywhere
+ufw-before-output  all  --  anywhere             anywhere
+ufw-after-output  all  --  anywhere             anywhere
+ufw-after-logging-output  all  --  anywhere             anywhere
+ufw-reject-output  all  --  anywhere             anywhere
+ufw-track-output  all  --  anywhere             anywhere
+The chains in iptables define what type of traffic the rules apply to:
+
+INPUT : all connections incoming to our server.
+OUTPUT : all traffic outgoing from the server.
+FORWARD : the connections passing through the server (for example for a router or a gateway).
+Each chain has a default policy, which indicates how to handle traffic that does not match any rules. By default, this policy is set to ACCEPT.
+
+Adding Rules
+A firewall can be configured using two approaches:
+
+Blacklist strategy: accept all traffic by default and only block what is undesirable through specific rules.
+Whitelist strategy (recommended): block all traffic by default and only allow what is necessary. This approach is more secure as it prevents unwanted connections before they attempt to access the server.
+To use iptables, we start by adding rules to allow the necessary incoming traffic for the services we want to expose. iptables can track the state of connections, which allows, for example, to permit the continuity of already established connections with the command:
+
+sudo iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT # allow the creation of rules in the INPUT chain for all already established connections
+We can verify that the rule has been added by running the command sudo iptables -L. Then, let's allow traffic to a specific port to enable SSH connections for example.
+
+sudo iptables -A INPUT -p tcp --dport ssh -j ACCEPT # authorize in the INPUT chain a rule that allows port 22 in tcp
+The SSH protocol uses port 22 by default. The iptables command can therefore be used to allow incoming traffic on this port. The same syntax can be applied for any other port or service that we want to allow access to.
+
+A few points to note:
+
+The flag -A means append, which means to add a rule at the end of the existing rules in the chain.
+To view all available flags and options in iptables, you can use:
+iptables --help
+Output display:
+
+iptables v1.8.4
+Usage: iptables -[ACD] chain rule-specification [options] iptables -I chain [rulenum] rule-specification [options] iptables -R chain rulenum rule-specification [options] iptables -D chain rulenum [options] iptables -[LS] [chain [rulenum]] [options] iptables -[FZ] [chain] [options] iptables -[NX] chain iptables -E old-chain-name new-chain-name iptables -P chain target [options] iptables -h (print this help information)
+
+Commands: Either long or short options are allowed. --append -A chain Append to chain --check -C chain Check for the existence of a rule --delete -D chain Delete matching rule from chain --delete -D chain rulenum Delete rule rulenum (1 = first) from chain --insert -I chain [rulenum] Insert in chain as rulenum (default 1=first) --replace -R chain rulenum Replace rule rulenum (1 = first) in chain --list -L [chain [rulenum]] List the rules in a chain or all chains --list-rules -S [chain [rulenum]] Print the rules in a chain or all chains --flush -F [chain] Delete all rules in chain or all chains --zero -Z [chain [rulenum]] Zero counters in chain or all chains --new -N chain Create a new user-defined chain --delete-chain -X [chain] Delete a user-defined chain --policy -P chain target Change policy on chain to target --rename-chain -E old-chain new-chain Change chain name, (moving any references) Options: --ipv4 -4 Nothing (line is ignored by ip6tables-restore) --ipv6 -6 Error (line is ignored by iptables-restore) [!] --protocol -p proto protocol: by number or name, eg. tcp' [!] --source -s address[/mask][...] source specification [!] --destination -d address[/mask][...] destination specification [!] --in-interface -i input name[+] network interface name ([+] for wildcard) --jump -j target target for rule (may load target extension) --goto -g chain jump to chain with no return --match -m match extended match (may load extension) --numeric -n numeric output of addresses and ports [!] --out-interface -o output name[+] network interface name ([+] for wildcard) --table -t table table to manipulate (default:filter') --verbose -v verbose mode --wait -w [seconds] maximum wait to acquire xtables lock before give up --wait-interval -W [usecs] wait time to try to acquire xtables lock default is 1 second --line-numbers print line numbers when listing --exact -x expand numbers (display exact values) [!] --fragment -f match second or further fragments only --modprobe= try to insert modules using this command --set-counters PKTS BYTES set the counter during insert/append [!] --version -V print package version.
+
+To enable access to an HTTP web server, let's use the following command:
+
+sudo iptables -A INPUT -p tcp --dport 80 -j ACCEPT
+After adding all the allowed rules we need, let's modify the entry strategy to deny all incoming packets by default.
+
+  Attention : Changing the default policy will only allow explicitly accepted connections. Make sure you have enabled at least SSH before changing the default rule. Otherwise, you risk losing access to your server via SSH.
+To set the default policy of the INPUT chain to block all unauthorized incoming traffic:
+
+sudo iptables -P INPUT DROP
+The same policies can be applied to the other chains (OUTPUT, FORWARD) using DROP or ACCEPT according to your needs.
+
+Recording and restoring rules
+If the server restarts, the iptables rules set in the session would be lost. To make them persistent, you need to use the iptables-persistent package:
+
+sudo apt-get install iptables-persistent -y
+During the installation, the system will ask you if you want to save the current rules for IPv4 and IPv6. Simply select Yes for both and press Enter.
+
+Thus, your iptables rules will be automatically restored upon server restart.
+
+Once installed, we will be able to record the rules in IPV4 and IPV6 with separate commands. For the IPV4 rules, the command is:
+
+sudo iptables-save | sudo tee /etc/iptables/rules.v4
+Output display:
+
+# Generated by iptables-save v1.8.4 on Mon Nov 21 11:10:15 2022
+*filter
+:INPUT DROP [9:448]
+:FORWARD DROP [0:0]
+...
+...
+-A ufw-user-limit -j REJECT --reject-with icmp-port-unreachable
+-A ufw-user-limit-accept -j ACCEPT
+COMMIT
+# Completed on Mon Nov 21 11:10:15 2022
+For the IPV6 rules:
+
+sudo ip6tables-save | sudo tee /etc/iptables/rules.v6
+In accordance with the basic operation of a firewall, the rules are interpreted in the order in which they appear on each chain. This means that the order of the rules is important for filtering to work correctly.
+
+The classic addition of new rules is done at the end of the list.
+If you want to insert a rule at a specific position in the list, you can use the command :
+sudo iptables -I <CHAIN> <NUMBER> <RULE>
+Where :
+
+<CHAIN> corresponds to the chain on which to apply the rule (INPUT, OUTPUT, FORWARD).
+<NUMBER> is the position in the list where the rule will be inserted (1 being the first position).
+<RULE> is the rule you wish to apply (e.g., allow a port or block an IP).
+Example: to allow SSH traffic on port 22 and have this rule evaluated before other rules, one could write:
+
+sudo iptables -I INPUT 1 -p tcp --dport 22 -j ACCEPT
+Thus, the SSH rule will be processed before the other rules in the INPUT chain.
+
+To find out the index number of our rules, let's use the following command:
+
+sudo iptables -L --line-numbers
+Output display:
+
+Chain INPUT (policy DROP)
+ num target prot opt source   destination
+ 1   ACCEPT all  --  anywhere anywhere ctstate RELATED,ESTABLISHED
+ 2   ACCEPT tcp  --  anywhere anywhere , dpt:ssh
+ 3   ACCEPT tcp  --  anywhere anywhere tcp dpt:http
+The number at the beginning of each line of the rule indicates the position in the string. To insert a new rule above an existing rule, simply use the index number of that rule.
+
+Example: to insert a rule at the top of the INPUT chain to allow HTTP traffic on port 80:
+sudo iptables -I INPUT 1 -p tcp --dport 80 -j ACCEPT
+Rule Suppression
+To delete an existing rule from a chain, use the -D parameter with the index number:
+
+Example: remove the second rule from the INPUT string:
+sudo iptables -D INPUT 2
+It is also possible to flush all rules of a specific chain or of all tables with the -F flag (flush):
+
+⚠️ Before clearing a chain, make sure that the default policy is set to ACCEPT to avoid blocking any legitimate traffic:
+
+sudo iptables -P INPUT ACCEPT
+Empty only the INPUT string:
+sudo iptables -F INPUT
+Clear all iptables rules:
+sudo iptables -F
+Attention: a server with empty iptables may be vulnerable to attacks. Remember to save your rules before deleting them if you want to be able to restore them.
+
+c.21 - UFW (Uncomplicated Firewall)
+Firewalls are defensive tools that allow for:
+
+Block or allow traffic.
+Close or open ports.
+Whitelist or blacklist traffic sources.
+UFW is a simplified interface for iptables that makes creating and managing firewall rules much easier.
+
+To install UFW on a Debian/Ubuntu based system:
+sudo apt install ufw -y
+After installing UFW, enable it by running the following command:
+
+sudo ufw enable
+Output display:
+
+Command may disrupt existing ssh connections. Proceed with operation (y|n)? y
+Firewall is active and enabled on system startup
+We can now check the status with the command:
+
+sudo ufw status
+Output display:
+
+Status: active
+As we can see, the firewall is active and enabled.
+
+The following command asks UFW to deny (block) all incoming traffic by default:
+
+Do not apply, as we are in this course connected via ssh, which would prevent us from connecting to our machine. We can apply this only if we are on the local machine.
+
+sudo ufw default deny incoming
+Then, we can add exceptions to allow incoming traffic through ports 80 (http) and https (443). As we can see, we can specify the ports or protocols with numeric values or by their name.
+
+sudo ufw allow 80 # we could have written http instead of 80 for the same result
+sudo ufw allow https
+Let's run the command again to check if the rules have been correctly added:
+
+sudo ufw status
+Output display:
+
+Status: active
+To Action From -- ------ ---- 80 ALLOW Anywhere 443/tcp ALLOW Anywhere 80 (v6) ALLOW Anywhere (v6) 443/tcp (v6) ALLOW Anywhere (v6)
+
+We can delete a specific rule using the delete argument followed by the rule to be deleted:
+
+sudo ufw delete allow 80
+Output display:
+
+Rule deleted
+Rule deleted (v6)
+If we check the status of our rules again:
+
+sudo ufw status
+Output display:
+
+Status: active
+To Action From -- ------ ---- 443/tcp ALLOW Anywhere 443/tcp (v6) ALLOW Anywhere (v6)
+
+We can confirm that this rule has been successfully removed. We can thus implement a restrictive and very defensive firewall. Deny all incoming traffic and add the exceptions that we wish to allow.
+
+We can also close ports and block certain IP addresses:
+
+ sudo ufw deny 25/tcp # blocks access on port 25 in tcp
+ sudo ufw deny from 203.5.1.43 # blocks access from host 203.5.1.43
+ sudo ufw deny from 1.1.1.2 to any port 22 # blocks access from host 1.1.1.2 from any source port to port 22 on our server
+Suppose we want to open ports and allow the IP address with ufw and add a comment. We have the comment option. The syntax is as follows to open TCP ports 80 and 443:
+
+sudo ufw allow 80/tcp comment 'allow access for port 80 in TCP'
+sudo ufw allow 1194/udp comment 'OpenVPN server' # another example that allows opening port 1194 in UDP
+c.22 - Netstat
+Netstat (Network Statistics) is a command to monitor network activity. It can show us all connections and their status, as well as their protocol, port, and destination or source address. To install netstat, we can execute the following command:
+
+sudo apt install net-tools -y
+If netstat is run without any options, the output looks like this:
+
+netstat
+Output display:
+
+roto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 localhost:http-alt      localhost:55594         ESTABLISHED
+tcp        0      0 localhost:55594         localhost:http-alt      ESTABLISHED
+tcp        0      0 ip-172-31-24-148.:48130 ec2-34-253-229-19.:http TIME_WAIT
+tcp        0    164 ip-172-31-24-148.eu:ssh ec2-3-8-37-29.eu-:21853 ESTABLISHED
+Active UNIX domain sockets (w/o servers)
+Proto RefCnt Flags       Type       State         I-Node   Path
+unix  2      [ ]         DGRAM                    236003   /run/user/1000/systemd/notify
+unix  3      [ ]         DGRAM      CONNECTED     546      /run/systemd/notify
+unix  2      [ ]         DGRAM                    563      /run/systemd/journal/syslog
+unix  11     [ ]         DGRAM      CONNECTED     573      /run/systemd/journal/dev-log
+unix  9      [ ]         DGRAM      CONNECTED     577      /run/systemd/journal/socket
+unix  3      [ ]         STREAM     CONNECTED     16018
+unix  3      [ ]         STREAM     CONNECTED     22766    /run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     22139    /run/systemd/journal/stdout
+unix  3      [ ]         DGRAM      CONNECTED     20099
+unix  3      [ ]         STREAM     CONNECTED     236007
+unix  3      [ ]         STREAM     CONNECTED     24466
+unix  2      [ ]         DGRAM      CONNECTED     21215
+unix  2      [ ]         DGRAM      CONNECTED     15427
+As you can see in the previous output, the first column displays the protocol (in this case TCP), the fourth column (local address) shows the local IP address and the local open port. The fifth column (Foreign Address) displays the hosts of the devices or servers we are connected to. The last column shows the state of the connection. In this case, the connections are established (active).
+
+We can ask netstat to display the remote hosts we are connected to by IP address instead of the hostname by adding the n flag:
+
+netstat -n
+Output display:
+
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 127.0.0.1:8080          127.0.0.1:55594         ESTABLISHED
+tcp        0      0 127.0.0.1:55594         127.0.0.1:8080          ESTABLISHED
+tcp        0    164 172.31.24.148:22        3.8.37.29:21853         ESTABLISHED
+By adding the -t flag, we can ask netstat to display only TCP connections:
+
+netstat -t
+Output display:
+
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+tcp        0      0 localhost:http-alt      localhost:55594         ESTABLISHED
+tcp        0      0 localhost:55594         localhost:http-alt      ESTABLISHED
+tcp        0    164 ip-172-31-24-148.eu:ssh ec2-3-8-37-29.eu-:21853 ESTABLISHED
+With the -p flag, we can ask netstat to display a new column including the PID and the name of the program that is generating the connection. In the following example, the PID is 3784, all belonging to the web browser Firefox:
+
+netstat -p
+Output display:
+
+unix  2      [ ]         DGRAM                    236003   21334/systemd        /run/user/1000/systemd/notify
+unix  3      [ ]         DGRAM      CONNECTED     546      -                    /run/systemd/notify
+unix  2      [ ]         DGRAM                    563      -                    /run/systemd/journal/syslog
+unix  10     [ ]         DGRAM      CONNECTED     573      -                    /run/systemd/journal/dev-log
+unix  9      [ ]         DGRAM      CONNECTED     577      -                    /run/systemd/journal/socket
+unix  3      [ ]         STREAM     CONNECTED     16018    -
+unix  3      [ ]         STREAM     CONNECTED     22766    -                    /run/dbus/system_bus_socket
+unix  3      [ ]         STREAM     CONNECTED     22139    -                    /run/systemd/journal/stdout
+unix  3      [ ]         DGRAM      CONNECTED     20099    -
+unix  3      [ ]         STREAM     CONNECTED     236007   21334/systemd
+unix  3      [ ]         STREAM     CONNECTED     24466    -
+unix  2      [ ]         DGRAM      CONNECTED     21215    -
+unix  2      [ ]         DGRAM      CONNECTED     15427    -
+unix  3      [ ]         STREAM     CONNECTED     16609    -                    /run/systemd/journal/stdout
+unix  3      [ ]         STREAM     CONNECTED     258346   -
+unix  3      [ ]         STREAM     CONNECTED     19959    -                    /run/systemd/journal/stdout
+unix  3      [ ]         STREAM     CONNECTED     26269    -                    /run/systemd/journal/stdout
+We can also combine options with the netstat command.
+
+Situation setup:
+
+You want to check the UDP and TCP connections, along with the PIDs of the processes and all the remote hosts we are connected to. What command should be used?
+
+To get the list of options, we can consult the help of netstat with the command:
+
+netstat -h # or netstat --help
+Output display:
+
+usage: netstat [-vWeenNcCF] [<Af>] -r         netstat {-V|--version|-h|--help}
+       netstat [-vWnNcaeol] [<Socket> ...]
+       netstat { [-vWeenNac] -i | [-cnNe] -M | -s [-6tuw] }
+
+        -r, --route              display routing table
+        -i, --interfaces         display interface table
+        -g, --groups             display multicast group memberships
+        -s, --statistics         display networking statistics (like SNMP)
+        -M, --masquerade         display masqueraded connections
+
+        -v, --verbose            be verbose
+        -W, --wide               don't truncate IP addresses
+        -n, --numeric            don't resolve names
+        --numeric-hosts          don't resolve host names
+        --numeric-ports          don't resolve port names
+        --numeric-users          don't resolve user names
+        -N, --symbolic           resolve hardware names
+        -e, --extend             display other/more information
+        -p, --programs           display PID/Program name for sockets
+        -o, --timers             display timers
+        -c, --continuous         continuous listing
+
+        -l, --listening          display listening server sockets
+        -a, --all                display all sockets (default: connected)
+        -F, --fib                display Forwarding Information Base (default)
+        -C, --cache              display routing cache instead of FIB
+        -Z, --context            display SELinux security context for sockets
+
+  <Socket>={-t|--tcp} {-u|--udp} {-U|--udplite} {-S|--sctp} {-w|--raw}
+           {-x|--unix} --ax25 --ipx --netrom
+  <AF>=Use '-6|-4' or '-A <af>' or '--<af>'; default: inet
+  List of possible address families (which support routing):
+    inet (DARPA Internet) inet6 (IPv6) ax25 (AMPR AX.25)
+    netrom (AMPR NET/ROM) ipx (Novell IPX) ddp (Appletalk DDP)
+    x25 (CCITT X.25)
+We can therefore execute the command:
+
+netstat -tupn
+Output display:
+
+Not all processes could be identified, non-owned process info
+ will not be shown, you would have to be root to see it all.)
+Active Internet connections (w/o servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+tcp        0      0 127.0.0.1:8080          127.0.0.1:55594         ESTABLISHED -
+tcp        0      0 127.0.0.1:55594         127.0.0.1:8080          ESTABLISHED -
+tcp        0    308 172.31.24.148:22        3.8.37.29:21853         ESTABLISHED -
+
+c.23 - SSH Presentation
+SSH (Secure Shell)
+SSH is a secure protocol mainly used to remotely control Linux servers via a text interface. It allows executing commands, configuring services, and managing systems remotely in a secure manner.
+
+Meaning : SSH = Secure Shell
+Function : Secure transmission of commands and data between a client and a remote server.
+Operation of SSH
+Remote shell session
+
+Once connected via SSH, the user obtains a shell session.
+All commands entered in the local terminal are transmitted via an encrypted SSH tunnel and executed on the remote server.
+Client-server model
+
+The SSH server runs an SSH daemon that listens for connections on a specific network port (by default, port 22).
+The server authenticates connection requests and creates the appropriate environment for the user if the authentication information is correct.
+The SSH client is the software on the local computer that allows connecting to the remote server with a username and the necessary credentials.
+
+SSH Authentication Methods
+Password
+
+Simple but less secure.
+Encryption enabled, but not recommended for sensitive environments.
+SSH Keys (recommended)
+
+Very secure.
+A pair of keys: public key + private key.
+
+The public key can be shared.
+The private key must remain strictly confidential.
+SSH Key Authentication Process :
+
+The public key is copied to the server in ~/.ssh/authorized_keys.
+The client informs the server that it wishes to use the public key for authentication.
+The server generates an encrypted message with the public key and sends it to the client.
+The client decrypts the message with its private key, combines the random string with the session ID, and generates an MD5 hash that it sends back to the server.
+The server compares the received hash with its expected value; if they match, the client is authenticated.
+⚠️ MD5 (Message-Digest Algorithm) is used to verify the integrity and authenticity of messages.
+
+Generating an SSH Key Pair
+To create a public and private key pair on your local machine:
+
+Common algorithms: RSA, ECDSA, ED25519.
+RSA is generally preferred and often the default.
+Command type to generate an RSA key:
+
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+-t rsa : key type
+-b 4096 : key length (4096 bits)
+-C : comment or email to identify the key
+To generate an RSA key pair on your local computer, run:
+
+ssh-keygen
+Output display:
+
+Generating public/private rsa key pair. Enter file in which to save the key (/home/ubuntu/.ssh/id_rsa):
+SSH Key Management
+After generating an RSA key pair with ssh-keygen, you get two files in the hidden .ssh directory of your user:
+
+~/.ssh/id_rsa : private key, to be kept strictly confidential.
+~/.ssh/id_rsa.pub : public key, can be shared freely.
+When generating the key, you can choose the storage location (press ENTER to accept the default value). Then, you can set a passphrase to encrypt your private key:
+
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again:
+The passphrase protects your private key.
+Each use of the key will require entering this passphrase.
+If someone obtains your private key but not the passphrase, they will not be able to connect via SSH.
+Example of output:
+
+Your identification has been saved in /root/.ssh/id_rsa.
+Your public key has been saved in /root/.ssh/id_rsa.pub.
+The key fingerprint is: 8c:e9:7c:fa:bf:c4:e5:9c:c9:b8:60:1f:fe:1c:d3:8a root@here
+The key's randomart image ...
+ssh-keygen -p
+Process:
+
+Select the key file to modify (default ~/.ssh/id_rsa) :
+Enter file in which the key is (/root/.ssh/id_rsa):
+Enter the old passphrase :
+Enter old passphrase:
+Enter a new passphrase or press ENTER to delete:
+Enter new passphrase (empty for no passphrase): 
+Enter same passphrase again:
+⚠️ If you have lost the old passphrase, you will not be able to recover it and will need to generate a new key pair.
+
+Each SSH key pair has a unique cryptographic fingerprint, useful for identifying the key.
+
+To display the fingerprint:
+
+ssh-keygen -l
+Select the key file to verify (press ENTER if it is the default file).
+The output will include:
+
+key length in bits
+fingerprint
+associated account and host
+algorithm used
+Example:
+
+Enter file in which the key is (/root/.ssh/id_rsa):
+If this is the correct location of the key, leave it as default; otherwise, enter the location provided when the key was created. You will receive a string containing the length in bits of the key, the fingerprint, the account, and the host for which it was created, as well as the algorithm used.
+
+Output display:
+
+2048 SHA256:45Vxp8rWnac70jKEVo9mZNKI5SxxyYOUJYPKFsrdaeU ubuntu@172.19.78.203 (RSA)
+To establish an SSH connection, we need to add a user on the remote machine to use as login credentials.
+
+On your machine, you can connect to the client1 container to create a user there.
+
+vagrant ssh client1
+Output display:
+
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.15.0-1019-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+This system has been minimized by removing packages and content that are
+not required on a system that users do not log into.
+
+To restore this content, you can run the 'unminimize' command.
+Last login: Wed Nov 30 18:05:54 2022 from 172.17.0.1
+Create your user utilisateur-ssh:
+
+sudo useradd -m -d /home/utilisateur-ssh utilisateur-ssh # Adds the user by creating their home directory
+sudo passwd utilisateur-ssh # Sets the password for the user utilisateur-ssh
+Output display:
+
+New password:
+Define a password and enter the same password again. We will set Datascientest2022@ as the password. Also, check the IP address to use to connect to this container.
+
+ip addr
+Output display:
+
+156: eth1@if157: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc noqueue state UP group default
+    link/ether 02:42:c0:a8:0a:0b brd ff:ff:ff:ff:ff:ff link-netnsid 0
+    inet 192.168.10.11/24 brd 192.168.10.255 scope global eth1
+       valid_lft forever preferred_lft forever
+You have several network cards available, but the IP address to use here is 192.168.10.11.
+
+Now, disconnect from this machine and connect this time via SSH without using Vagrant.
+
+exit
+Output display:
+
+logout
+Connection to 127.0.0.1 closed.
+Connect now using this password. The syntax is ssh user@addressIO
+
+ssh user-ssh@192.168.10.11
+Output display:
+
+The authenticity of host '192.168.10.11 (192.168.10.11)' can't be established.
+ECDSA key fingerprint is SHA256:UFy40RBLiCDfoRwV05JFzQzwLawZTn017o9hUvF2El0.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? yes
+Warning: Permanently added '192.168.10.11' (ECDSA) to the list of known hosts.
+The output asks you if you want to continue, simply enter yes. Output display:
+
+user-ssh@192.168.10.11's password:
+Please enter the password set for the user.
+
+To set up a passwordless connection between the server and the client, you will need to generate a key pair as mentioned earlier and copy the public key to the server so that the private key can authenticate you on the specified server.
+
+ssh-keygen
+You will validate the default location, and you will not set a password.
+
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/ubuntu/.ssh/id_rsa):
+Enter passphrase (empty for no passphrase):
+Enter same passphrase again:
+Your identification has been saved in /home/ubuntu/.ssh/id_rsa
+Your public key has been saved in /home/ubuntu/.ssh/id_rsa.pub
+The key fingerprint is:
+SHA256:5jl4y13BsRiwVfja4vnFKcMDJn3JvBE7I0+Ey9UrjKI ubuntu@ip-172-31-25-195
+The key's randomart image is:
++---[RSA 3072]----+
+|        . .o.    |
+|         +.. .   |
+|        . o.= .  |
+|         o %.* . |
+|        S Xo^ .  |
+|       = =oB.O . |
+|      E =. oO +  |
+|       o +o. =   |
+|        o ...    |
++----[SHA256]-----+
+You can now use the command that will serve to copy the public key to the host client1, and then you will need to enter your password to validate the key copy:
+
+ssh-copy-id ssh-user@192.168.10.11
+Output display:
+
+/usr/bin/ssh-copy-id: INFO: Source of key(s) to be installed: "/home/ubuntu/.ssh/id_rsa.pub"
+/usr/bin/ssh-copy-id: INFO: attempting to log in with the new key(s), to filter out any that are already installed
+/usr/bin/ssh-copy-id: INFO: 1 key(s) remain to be installed -- if you are prompted now it is to install the new keys
+utilisateur-ssh@192.168.10.11's password:
+
+Number of key(s) added: 1
+
+Now try logging into the machine, with:   "ssh 'user-ssh@192.168.10.11'"
+and check to make sure that only the key(s) you wanted were added.
+You can now disconnect from the container and restart an SSH connection to verify that it does not ask you for a password:
+
+exit
+ssh user-ssh@192.168.10.11
+Output display:
+
+Welcome to Ubuntu 20.04.5 LTS (GNU/Linux 5.15.0-1019-aws x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+ * Management:     https://landscape.canonical.com
+ * Support:        https://ubuntu.com/advantage
+
+Este sistema ha sido minimizado al eliminar paquetes y contenido que no son necesarios en un sistema al que los usuarios no inician sesión.
+
+To restore this content, you can run the 'unminimize' command.
+$ 
+You can therefore confirm that no password is being requested.
