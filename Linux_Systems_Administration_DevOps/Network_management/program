@@ -348,3 +348,401 @@ qmqp            628/tcp
 wnn6            22273/tcp                       # wnn6
 
 We can therefore see a list of services, the ports, and the protocols used by the services in question.
+
+c.8 - Domain Name System (DNS)
+DNS stands for Domain Name System. It is a system that converts domain names into IP addresses, used by a browser or any network application to access websites or other Internet resources.
+
+Each device connected to the Internet has a unique IP address. DNS servers allow users to use simple domain names, such as datascientest.fr, without having to memorize complex IP addresses.
+
+What is a DNS server?
+A DNS server contains a database that associates domain names with their corresponding IP addresses. It acts as an Internet directory, finding the correct IP address for a domain name entered by a user.
+
+Operation of a DNS Server
+When a user enters a URL, the DNS request goes through several servers to obtain the correct IP address:
+
+DNS Resolver: receives the initial request from the client and interacts with other servers to find the IP address. Root Servers: provide the list of TLD (top-level domain, e.g., .com, .fr) name servers. TLD Servers: locate the IP address of the second-level domain (e.g., twitter.com) and redirect the request to the authoritative name server. Authoritative Servers: provide the final response with the IP address. They can be masters (primary server with the original records) or slaves (secondary server, a copy of the master for load balancing and redundancy).
+
+Management of hosts without DNS server Entries can be configured locally via the file /etc/hosts. This method works for small networks but is not suitable for large infrastructures.
+
+c.9 - Routing
+When two machines are connected point to point, they can communicate directly. To communicate with machines on other networks or on the Internet, routing is necessary.
+
+Routers direct traffic based on the destination address. Each transmission through a router is called a hop.
+
+Default gateway: the router used for all traffic destined for external networks.
+Static routing: manually defined via the route command. Useful for small networks.
+Dynamic routing: uses protocols such as RIP, EIGRP, and OSPF to automatically determine the best paths.
+RIP: chooses the route with the fewest hops.
+OSPF: allows defining metrics to prioritize certain routes (bandwidth, latency).
+For interconnected networks on the Internet scale, the BGP (Border Gateway Protocol) is used.
+c.10 - Internet Protocol version 6 (IPv6)
+IPv4 uses 32-bit addresses, which are limited in number. With the increase in connected devices, IPv6 was introduced with 128-bit addresses, ensuring an almost unlimited addressing space.
+
+IPv6 addresses are written in 8 hexadecimal groups separated by colons, for example:
+2176:03df:1311:21da::33ad:136
+Leading zeros can be omitted, and multiple consecutive groups of zeros can be replaced by :: :
+2176:3df:1311:21da::33ad:136
+It is possible to have both an IPv4 and an IPv6 address on the same host.
+c.11 - The ip command in Linux
+The command ip replaces the old command ifconfig and allows you to:
+
+configure network interfaces (assign or remove an IP),
+display network settings,
+manage routing tables and tunnels.
+Basic command example:
+
+ip addr
+This command displays the network information and the addresses configured on the server.
+
+ip addr
+Output display:
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc mq state UP group default qlen 1000
+    link/ether 06:43:eb:74:5c:c6 brd ff:ff:ff:ff:ff:ff
+    inet 172.31.24.148/20 brd 172.31.31.255 scope global dynamic eth0
+       valid_lft 2536sec preferred_lft 2536sec
+    inet6 fe80::443:ebff:fe74:5cc6/64 scope link
+       valid_lft forever preferred_lft forever
+As we saw earlier, the command ip addr (or ip address) returns information about network interfaces such as loopback (lo) and eth0.
+
+loopback (lo) : This is a virtual network device used internally by the operating system. This interface does not interact with the external network and is used for the system to send traffic to itself. By default, the loopback interface is assigned the IP address 127.0.0.1 and the name localhost.
+
+eth0 : This is the main network interface of the server or the wired network card. Wired interfaces are typically named ethX or enpXsY, while wireless interfaces appear as wlanX or wlpXsY, where X and Y depend on the number and type of connected devices.
+
+link/ether : Each network card has a unique physical address called a MAC address. Unlike the IP address (assigned by the network or configured manually), the MAC address is factory-assigned and uniquely identifies the network card on the local network.
+
+inet : Displays the IPv4 address of the interface. Each wired or wireless network interface is assigned a unique address in Internet Protocol version 4.
+
+inet6 : Displays the IPv6 address of the interface. IPv6 was created to increase the number of available addresses and consists of 8 groups of 4 hexadecimal digits, separated by colons. For example, for the interface eth0, an IPv6 address can be :
+
+fe80::443:ebff:fe74:5cc6/64
+
+Although IPv6 is newer, IPv4 remains widely used, and most network interfaces operate with both protocols simultaneously.
+
+You can use ip address or ip addr interchangeably, with addr being simply the abbreviation of address.
+
+To display the information of a specific interface, you can use:
+
+ip addr show dev nom_de_la_carte_reseau
+This command allows you to filter the output and display only the information for the desired interface.
+
+Context Setting:
+
+Display information about the device eth0.
+
+To display all information related to the IPv4 protocol for all network devices, we can execute the following command:
+
+ip -4 a
+Output display:
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc mq state UP group default qlen 1000
+    inet 172.31.24.148/20 brd 172.31.31.255 scope global dynamic eth0
+       valid_lft 2960sec preferred_lft 2960sec
+To display all information related to the IPv6 protocol for all network devices, we can execute the following command:
+
+ip -6 a
+Output display:
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 state UNKNOWN qlen 1000
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 state UP qlen 1000
+    inet6 fe80::443:ebff:fe74:5cc6/64 scope link
+       valid_lft forever preferred_lft forever
+Situation Setup:
+
+Display the information of the eth0 card, filtering those that are specific to IPV4.
+
+ip -4 addr show eth0
+Output display:
+
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 9001 qdisc mq state UP group default qlen 1000
+    inet 172.31.24.148/20 brd 172.31.31.255 scope global dynamic eth0
+       valid_lft 2492sec preferred_lft 2492sec
+We can do the same for the IPV6 address for the network card lo.
+
+ip -6 addr show dev lo
+Output display:
+
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+If we now want to remove the IP address from the network interface eth0, we can enter the command:
+
+ip addr del ip_address dev network_card
+Context Setting:
+
+Enter the command that allows you to remove the IP address from the eth0 interface with the IP address 172.31.24.148.
+
+Do not run it on your server, as it will simply become unreachable. If your machine has multiple physical cards, you can execute the command while being careful to choose the right card.
+
+ip addr del 172.31.24.148 dev eth0
+If we want to add an IP address to a network card, we will simply replace del with add:
+
+ip addr add 172.31.24.2 dev eth0 #we add the IP address 172.31.24.2 on the eth0 card
+In order to set up certain configurations, we will need to disable the network card. The network card can also be referred to as network interface or network link. Disabling and enabling a network interface is useful for applying certain changes.
+
+To disable a network card, we can proceed as follows:
+
+sudo ip link set down eth0 #we request that the eth0 link can have a status "down"
+Similarly, to activate the network card, we simply replace the state down that we defined with up.
+
+sudo ip link set up eth0
+
+c.12 - Public and Private IP Addresses
+There are two main types of IP addresses: public and private.
+
+
+The Internet is the most well-known public network. To connect to it, it is necessary to have a public IP address.
+
+In IPv4, an IP address ranges from 0.0.0.0 to 255.255.255.255, which represents exactly 3,706,452,992 public IP addresses available worldwide. Thus, when subscribing to an Internet service, the Internet Service Provider (ISP) assigns a unique public IP address to our connection to enable access to the Internet.
+
+The ISP assigns this public IP address to the router. All devices connected to this router then use this same public IP address to communicate with the Internet.
+
+Conversely, when devices on a local network interact with each other (for example, two home computers or a computer and the router), they do not need a public IP address, as the communication occurs internally.
+
+Thus, a router generally has two IP addresses:
+
+A public IP to communicate with the Internet.
+A private IP to communicate with local network devices.
+That's why routers have at least two network interfaces: one for the public network and one for the private network.
+
+A local network can be considered as a home or professional network, where all devices (computers, smartphones, tablets, etc.) are connected to each other via a router, either by Wi-Fi or by Ethernet cable. When these devices access the Internet, they use the public IP address of the router to interact with the external network.
+
+All IP addresses within a network must be unique :
+
+In a local network, two devices cannot share the same internal IP.
+On the Internet, each user or device must have a unique public IP address.
+However, two different local networks can use the same range of internal IP addresses without conflict, as they do not interact directly. For example:
+
+The router "A" can have the internal address 192.168.0.254.
+The router "B", located in another local network, can have the same internal address 192.168.0.254.
+These internal addresses do not conflict as long as the local networks remain separate. As soon as devices communicate with the Internet, it is the public IP address of the router that serves as the unique identifier.
+
+Summary of commands:
+
+
+Command	Usage
+ip addr / ip address	Prints information about all interfaces
+ip addr show dev	Prints information about a specific interface
+ip -4 a	Displays all information related to IPv4
+ip -6 a	Displays all information related to IPv6
+ip -4 addr show dev	Displays IPv4 data for the specific device
+ip -6 addr show dev	Displays IPv6 data for the specific device
+ip addr del  dev	Removes the IP address on a specific device
+ip addr add  dev	Adds an IP address to a specific device
+sudo ip link set down	Disables a network device
+sudo ip link set up	Enables a network device
+
+c.13 - The PING command
+The ping command, which uses the ICMP (Internet Control Message Protocol) from the network layer, is primarily used to diagnose a network. It allows checking the connectivity between devices.
+
+When a user sends a ping to an IP address or a hostname, they are asking the target device to confirm its presence on the network. If the latter responds, the ping provides information about the time taken to reach the destination and return (the response time or latency).
+
+The ping command is one of the most basic and universal network commands. It allows you to check if a device is connected to the network.
+
+If a device responds to the ping, it means it is active and reachable at the specified IP address.
+If no response is received, the device is inaccessible and no communication is possible.
+When a user joins a network but cannot access the Internet, the first step often involves pinging the router to check that access to the local network is functioning correctly.
+
+Similarly, a network administrator can use the ping command to check that an IP address they wish to assign to a device is available before configuring it.
+
+The basic syntax of the command is:
+
+ping [address]
+For example, to test connectivity with a public DNS server from Google, you can run:
+
+ping 8.8.8.8
+Output display:
+
+PING 8.8.8.8 (8.8.8.8) 56(84) bytes of data.
+64 bytes from 8.8.8.8: icmp_seq=1 ttl=43 time=1.52 ms
+64 bytes from 8.8.8.8: icmp_seq=2 ttl=43 time=1.58 ms
+64 bytes from 8.8.8.8: icmp_seq=3 ttl=43 time=1.64 ms
+64 bytes from 8.8.8.8: icmp_seq=4 ttl=43 time=1.53 ms
+64 bytes from 8.8.8.8: icmp_seq=5 ttl=43 time=1.54 ms
+64 bytes from 8.8.8.8: icmp_seq=6 ttl=43 time=1.57 ms
+We notice that we have responses from this server. However, the command does not stop by itself; you can press the ctrl+c keys to "cancel".
+
+We can also run the ping command on domain names. Let's execute a ping on google.fr for example:
+
+ping google.fr
+Output display:
+
+PING google.fr (142.250.180.3) 56(84) bytes of data.
+64 bytes from lhr25s32-in-f3.1e100.net (142.250.180.3): icmp_seq=1 ttl=107 time=1.37 ms
+64 bytes from lhr25s32-in-f3.1e100.net (142.250.180.3): icmp_seq=2 ttl=107 time=1.34 ms
+64 bytes from lhr25s32-in-f3.1e100.net (142.250.180.3): icmp_seq=3 ttl=107 time=1.46 ms
+64 bytes from lhr25s32-in-f3.1e100.net (142.250.180.3): icmp_seq=4 ttl=107 time=1.33 ms
+Similarly, if the host we want to reach is not accessible on the network, we will encounter an error:
+
+ping 172.31.24.1
+Output display:
+
+PING 172.31.24.1 (172.31.24.1) 56(84) bytes of data.
+From 172.31.24.148 icmp_seq=1 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=2 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=3 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=4 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=5 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=6 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=7 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=8 Destination Host Unreachable
+From 172.31.24.148 icmp_seq=9 Destination Host Unreachabl
+
+c.14 - DHCP
+There are two ways to assign an IP address to a device: statically or dynamically.
+
+Static IP addresses: they are permanent and configured directly on the device. The address does not change unless it is modified manually.
+Dynamic IP addresses: they are automatically assigned by a router or a DHCP (Dynamic Host Configuration Protocol) server and are not persistent. After a restart, the device may receive a different address from the previous session.
+Today, most routers include a DHCP server. When a user connects to a network (via cable or Wi-Fi), they automatically receive an IP address to identify themselves and access the network and the Internet, without manual configuration.
+
+Suppose an user joins a network but does not have Internet access: this may be due to the lack of IP address assignment or an incorrect address.
+
+The following command allows you to request an IP address from a DHCP server for a specific network interface:
+
+sudo dhclient [interface]
+The user does not need to specify the router or the DHCP server address, only the network interface for which the address should be assigned.
+⚠️ If the interface already has an IP address, the command will return an error. It is then possible to remove the IP address from the interface before executing dhclient to obtain a new address.
+Example: To obtain an IP address via DHCP on the interface eth0:
+
+sudo dhclient eth0
+
+c.14 - DNS and the file /etc/resolv.conf
+IP addresses (IPv4) consist of 4 octets separated by periods, with values from 0 to 255 in each octet (example: 212.123.56.2).
+
+For humans, memorizing these addresses is difficult. That's why domain names were created: they make it easy to remember a website, like www.facebook.com, instead of the IP address 157.240.221.35.
+
+The DNS (Domain Name System) is the service that translates domain names into IP addresses and vice versa. It allows a user to access a website using a comprehensible name rather than an IP address.
+
+When an administrator sets up a server and a domain name, they associate the domain with the IP address of their server. This information is replicated across all DNS servers in the world.
+On the user side, the device must know the addresses of the DNS servers to resolve domain names. Without a configured DNS server, a device will not be able to use domain names and will have to connect directly via IP addresses.
+The file /etc/resolv.conf is a text file where the DNS servers to which the device can make requests to resolve domain names are defined.
+
+By default, when the device connects to a router or a network, the DNS is often provided automatically by the router.
+Thus, the router acts as the default DNS server for all devices connected to the network.
+We can display the contents of the file /etc/resolv.conf to discover its content:
+
+cat /etc/resolv.conf
+Output display:
+
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients to the
+# internal DNS stub resolver of systemd-resolved. This file lists all
+# configured search domains.
+#
+# Run "resolvectl status" to see details about the uplink DNS servers
+# currently in use.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+nameserver 127.0.0.53 options edns0 trust-ad search eu-west-2.compute.internal
+
+The syntax for adding a simple DNS server is to simply add one or more lines in the file /etc/resolv.conf with the structure nameserver ip_address.
+
+Let's imagine that we want to add Google as a DNS server on our server, our file /etc/resolv.conf would look like this:
+
+# This file is managed by man:systemd-resolved(8). Do not edit.
+#
+# This is a dynamic resolv.conf file for connecting local clients to the
+# internal DNS stub resolver of systemd-resolved. This file lists all
+# configured search domains.
+#
+# Run "resolvectl status" to see details about the uplink DNS servers
+# currently in use.
+#
+# Third party programs must not access this file directly, but only through the
+# symlink at /etc/resolv.conf. To manage man:resolv.conf(5) in a different way,
+# replace this symlink by a static file or a different symlink.
+#
+# See man:systemd-resolved.service(8) for details about the supported modes of
+# operation for /etc/resolv.conf.
+nameserver 127.0.0.53 options edns0 trust-ad search eu-west-2.compute.internal nameserver 8.8.8.8 # Add google as a DNS server
+
+This is how you define a DNS server, ensuring that your device can resolve domain names.
+
+c.15 - The HOST command
+The host command is used for DNS resolution. It allows us to find out the IP address of a specific domain name.
+
+For example, to display the IP address of the domain name _facebook.com_, we can execute the host command followed by the URL for which you want to know the IP address:
+
+host facebook.com
+Output display:
+
+facebook.com has address 157.240.214.35
+facebook.com has IPv6 address 2a03:2880:f158:181:face:b00c:0:25de
+facebook.com mail is handled by 10 smtpin.vvv.facebook.com.
+As you can see, the output returns both IPv4 and IPv6 addresses and mail servers.
+
+If the user executes the same command with an IP address instead of a domain name, it returns the hostname.
+
+host 157.240.214.35
+Output display:
+
+35.214.240.157.in-addr.arpa domain name pointer edge-star-mini-shv-02-lhr8.facebook.com.
+We can see that this IP address indeed returns a subdomain of Facebook.
+
+c.16 - The hostname command
+The command hostname allows users to temporarily change their system hostname until the next reboot.
+
+The changes that users can make with this command are not persistent and will only last until the next reboot. If the hostname command is executed without parameters, it returns the current hostname of the system.
+
+hostname
+Output display:
+
+ip-172-31-24-148
+
+To change the current hostname (without persistence), execute the command with privileges followed by the new hostname you wish to set. In the following example, the hostname _LinuxHint_ is replaced by _Linux-hint-com_.
+
+hostname datascientest
+You will not see the change in the current terminal unless you restart the session or change the user. You can change the user with the command sudo -i, to be logged in as the root user.
+
+sudo -i
+Output display:
+
+root@datascientest:~#
+We can therefore see that the hostname has changed from ip-172-31-24-148 to datascientest. To permanently change the system's hostname, the user must modify two files: /etc/hosts and /etc/hostname. If you check the contents of both files using the cat command, you can see that both files contain the hostname ip-172-31-24-148.
+
+cat /etc/hostname
+Output display:
+
+ip-172-31-24-148
+The file /etc/hosts contains more information, including the host and the IP address of all interfaces, including the local address of the machine 127.0.0.1 named localhost.
+
+cat /etc/hosts
+Output display:
+
+::1 ip6-localhost ip6-loopback
+fe00::0 ip6-localnet
+ff00::0 ip6-mcastprefix
+ff02::1 ip6-allnodes
+ff02::2 ip6-allrouters
+ff02::3 ip6-allhosts
+To permanently change the hostname, let's open the file /etc/hostname with privileges using any text editor.
+
+sudo nano /etc/hostname
+And let's replace the content with our new hostname datascientest. Once done, save the changes.
+
+The user can also permanently change the hostname using the hostnamectl command:
+
+sudo hostnamectl set-hostname datascientest
+Once the command is executed, we can see that the content of the file /etc/hostname has changed.
+
+cat /etc/hostname
+Output display:
+
+datascientest
