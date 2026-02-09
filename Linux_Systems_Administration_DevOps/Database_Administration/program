@@ -1,0 +1,926 @@
+
+A - Presentation
+MariaDB: relational database server
+MariaDB is one of the most widely used open source relational database management systems (RDBMS). Developed by the community, MariaDB has been derived from MySQL since 2009, following the acquisition of MySQL by Oracle.
+
+MariaDB is distinguished by:
+
+better performance and speed compared to MySQL,
+enhanced security,
+a more efficient asynchronous master-slave replication.
+Main Editions of MariaDB
+MariaDB Community Edition
+
+Version open source, available for free download.
+MariaDB Enterprise Server Edition
+
+Based on the Community Edition, but with additional features:
+
+additional plugins,
+automatic failover,
+database firewall,
+security alerts,
+technical support and consulting.
+MariaDB SkySQL
+
+Solution DBaaS (Database as a Service) in the cloud.
+Brings the power of Enterprise edition for cloud deployments.
+Manages thousands of production databases thanks to its efficiency and advanced features.
+To compare the editions and choose the one that suits your needs, visit the official MariaDB page.
+
+B - Installation and Configuration
+b.1 - Installation on Ubuntu Server
+Log in to your Ubuntu Server 24.04 machine provided by Datascientest. Update the local repositories to fetch the latest versions of the packages:
+
+sudo apt update
+sudo apt upgrade -y
+Install the MariaDB server and the MariaDB client:
+
+sudo apt install mariadb-server mariadb-client -y
+Check that the MariaDB service is running:
+
+sudo systemctl status mariadb
+The status must be active (running).
+sudo apt update -y
+The Ubuntu repositories already provide MariaDB packages. Installation is straightforward using the APT package manager as follows.
+
+sudo apt install mariadb-server mariadb-client -y
+However, the version of MariaDB provided by the Ubuntu repositories is not the latest. Indeed, we have version 10.3.34 of MariaDB. To install the latest version, we can use the official MariaDB repository.
+
+First, let's install the required package.
+
+sudo apt install -y software-properties-common
+Then, import the GPG signing key.
+
+sudo apt-key adv --fetch-keys 'https://mariadb.org/mariadb_release_signing_key.asc'
+Once the GPG key is in place, let's add the MariaDB APT repository with the version we intend to install.
+
+sudo add-apt-repository 'deb [arch=amd64,arm64,ppc64el] https://mariadb.mirror.liquidtelecom.com/repo/10.6/ubuntu focal main'
+Finally, let's update the local repositories and install the MariaDB server and client using the APT package manager.
+
+sudo apt update && sudo apt install -y mariadb-server mariadb-client
+The command installs the specified version of the database engine and the MariaDB client, as well as other additional packages and dependencies. We can confirm the installed version of MariaDB as indicated.
+
+mariadb --version
+Output display:
+
+mariadb  Ver 15.1 Distrib 10.6.11-MariaDB, for debian-linux-gnu (x86_64) using readline 5.2
+b.2 Start and Enable MariaDB
+By default, the MariaDB database engine starts automatically upon installation. We can verify this by executing the command:
+
+sudo systemctl status mariadb
+Output display:
+
+mariadb  Ver 15.1 Distrib 10.6.11-MariaDB, for debian-linux-gnu (x86_64) using readline 5.2
+ubuntu@ip-172-31-24-148:~$
+ubunt@ip-172-31-24-148:~$
+ubunt@ip-172-31-24-148:~$ systemctl status mariadb
+● mariadb.service - MariaDB 10.6.11 database server
+     Loaded: loaded (/lib/systemd/system/mariadb.service; enabled; vendor preset: enabled)
+    Drop-In: /etc/systemd/system/mariadb.service.d
+             └─migrated-from-my.cnf-settings.conf
+     Active: active (running) since Mon 2022-11-14 15:04:49 UTC; 1min 17s ago
+       Docs: man:mariadbd(8)
+             https://mariadb.com/kb/en/library/systemd/
+   Main PID: 18285 (mariadbd)
+     Status: "Taking your SQL requests now..."
+      Tasks: 10 (limit: 4689)
+     Memory: 102.7M
+     CGroup: /system.slice/mariadb.service
+             └─18285 /usr/sbin/mariadbd
+b.3 - Management of the MariaDB service
+After installation, you can check that the MariaDB service is active:
+
+sudo systemctl status mariadb
+If for any reason the service is not active, you can start it manually:
+
+sudo systemctl start mariadb
+To ensure that MariaDB starts automatically on each server reboot:
+
+sudo systemctl enable mariadb
+This command ensures that the MariaDB service is enabled at startup, ensuring the availability of the database without manual intervention.
+
+b.4 - Securing MariaDB
+By default, MariaDB has certain default configurations that may present security vulnerabilities, exposing the database to attacks or unauthorized access.
+
+To enhance security, MariaDB provides a secure configuration script:
+
+sudo mysql_secure_installation
+This script allows to:
+
+Set a password for the user root,
+Remove anonymous users,
+Disable remote root logins,
+Remove the test database accessible to all,
+Reload privileges to apply the changes.
+The execution of this script is a crucial step to secure your MariaDB server before any production use.
+
+Output display:
+
+NOTE: RUNNING ALL PARTS OF THIS SCRIPT IS RECOMMENDED FOR ALL MariaDB
+      SERVERS IN PRODUCTION USE!  PLEASE READ EACH STEP CAREFULLY!
+
+In order to log into MariaDB to secure it, we'll need the current
+password for the root user. If you've just installed MariaDB, and
+haven't set the root password yet, you should just press enter here.
+
+Enter current password for root (enter for none)
+The script guides us through a series of information to enter that will require us to modify the security options involving the MariaDB database engine.
+
+He invites us to enter the current root password, we will enter the password Datascientest2022.
+
+Output display:
+
+OK, successfully used password, moving on...
+
+Setting the root password or using the unix_socket ensures that nobody
+can log into the MariaDB root user without the proper authorisation.
+
+You already have your root account protected, so you can safely answer 'n'.
+
+Switch to unix_socket authentication [Y/n] y
+The next option is to set the root password or use unix_socket to ensure that no one can connect with the root user of MariaDB without the appropriate authorization.
+
+We have already set a password for the user root, so you can safely respond n.
+
+Output display:
+
+Switch to unix_socket authentication [Y/n] n
+ ... skipping.
+
+You already have your root account protected, so you can safely answer 'n'.
+
+Change the root password? [Y/n]
+Then, we can respond n, as we no longer need to change the password for the root user that we just set.
+
+Output display:
+
+Change the root password? [Y/n] n
+ ... skipping.
+
+By default, a MariaDB installation has an anonymous user, allowing anyone
+to log into MariaDB without having to have a user account created for
+them.  This is intended only for testing, and to make the installation
+go a bit smoother.  You should remove them before moving into a
+production environment.
+
+Remove anonymous users? [Y/n] y
+This step involves determining whether we want to prohibit anonymous connections to our database management system. For security reasons, we must disallow any anonymous connections. Therefore, we need to enter the value y.
+
+Output display:
+
+Remove anonymous users? [Y/n] y
+ ... Success!
+
+By default, MariaDB comes with a database named 'test' that anyone can
+access.  This is also intended only for testing, and should be removed
+before moving into a production environment.
+
+Disallow root login remotely? [Y/n] y
+This step involves prohibiting any remote connection as the user root on our system. For security reasons, we must disallow remote connections for the user root. Therefore, we enter the value y.
+
+Output display:
+
+Disallow root login remotely? [Y/n] y
+ ... Success!
+
+By default, MariaDB comes with a database named 'test' that anyone can
+access.  This is also intended only for testing, and should be removed
+before moving into a production environment.
+
+Remove test database and access to it? [Y/n] y
+This step asks us if we want to delete the test database. It is advisable to delete this database for the simple reason that we do not need it once on our production server. This allows us to limit the possibilities of intrusion on our server. We therefore enter the value y to confirm.
+
+Output display:
+
+Remove test database and access to it? [Y/n] y
+ - Dropping test database...
+ ... Success!
+ - Removing privileges on test database...
+ ... Success!
+
+Reloading the privilege tables will ensure that all changes made so far will take effect immediately.
+
+Reload privilege tables now? [Y/n] y
+The last step is to reload the privilege table so that the changes can take effect immediately. We then enter the value y. Output display:
+
+Reload privilege tables now? [Y/n] y
+ ... Success!
+
+Cleaning up...
+
+All done! If you've completed all of the above steps, your MariaDB installation should now be secure.
+
+Thanks for using MariaDB!
+We have successfully completed the initial security configuration for MariaDB. Let's see how to use it in the next part.
+
+C - Administration
+c.1 - Configure a password-authenticated user
+For security reasons, it is recommended to not use the root user of MariaDB for daily operations. Instead, we create a new user with a secure password and, if necessary, administrative privileges.
+
+Connect to MariaDB as root :
+
+sudo mariadb
+Or
+
+sudo mysql -u root -p
+Create a new user with a password :
+
+CREATE USER 'new_user'@'localhost' IDENTIFIED BY 'SecurePassword123!';
+'nouvel_utilisateur' : the name of your new user.
+'localhost' : restricts access from the local machine.
+'MotDePasseSecurise123!' : strong password for authentication.
+
+Assign privileges :
+
+If you want to give this user full administrative rights, you can execute:
+
+GRANT ALL PRIVILEGES ON <i>.</i> TO 'new_user'@'localhost' WITH GRANT OPTION;
+ALL PRIVILEGES : gives all possible privileges. *.</i> : applies to all databases and tables.
+WITH GRANT OPTION : allows the user to grant privileges to other accounts.
+Apply the changes :
+
+FLUSH PRIVILEGES;
+Log out :
+
+EXIT;
+From now on, it is recommended to use this new user for all your routine operations on the database, and to reserve root only for critical administrative operations.
+
+Connect as the root user as follows:
+
+sudo mariadb -u root -p
+Output display:
+
+sudo mariadb -u root -p
+Enter password:
+We will need to enter our password and then we can create a regular user. Here, we are creating a user called datascientestdbadmin. Make sure to replace motdepasse with our user's password. We will enter these instructions to create our user:
+
+CREATE USER 'datascientestdbadmin'@'localhost' IDENTIFIED BY 'motdepasse';
+Output display:
+
+Query OK, 0 rows affected (0.002 sec)
+Then, let's grant all privileges to the user datascientestdbadmin. This affects all permissions of the root user root of the database to the user.
+
+GRANT ALL PRIVILEGES ON <i>.</i> TO 'datascientestdbadmin'@'localhost';
+Output display:
+
+Query OK, 0 rows affected (0.001 sec)
+The generic notation <i>.</i> implies that the user is allowed to execute any task on any database of the database server.
+
+To apply the changes, flush the privileges.
+
+FLUSH PRIVILEGES;
+We can check the presence of the user we just created:
+
+SELECT User FROM mysql.user;
+Output display:
+
++----------------------+
+| User |
++----------------------+
+| datascientestdbadmin |
+| mariadb.sys |
+| root |
++----------------------+
+3 rows in set (0.001 sec)
+Finally, exit the database server.
+
+EXIT;
+Output display:
+
+Bye
+Situation setup:
+
+Reconnect to MariaDB and create a new user account called datascientest with the password NouvelUtilisateur2022.
+
+You will then grant rights for insert, select, update, and delete actions on the datascientest database.
+
+To create the database datascientest, we use the following command CREATE DATABASE datascientest ;. Instructions sent to the server always end with a semicolon ;.
+
+sudo mariadb -u root -p # connect to mariadb
+CREATE USER 'datascientest'@'localhost' IDENTIFIED BY 'NouvelUtilisateur2022'; # create the user datascientest
+CREATE DATABASE datascientest; # create the database datascientest
+GRANT SELECT, INSERT, UPDATE, DELETE ON datascientest.* TO 'datascientest'@'localhost'; # Grant roles to the user datascientest on the database datascientest
+FLUSH PRIVILEGES; # validate changes
+c.2 - Common MariaDB Administration Actions
+We can now check for the presence of the user and the database:
+
+SHOW DATABASES; # Displays the list of created databases
+Output display:
+
+MariaDB [(none)]> SHOW DATABASES;
++--------------------+
+| Database           |
++--------------------+
+| datascientest      |
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+5 rows in set (0.001 sec)
+SELECT User FROM mysql.user; # Displays the list of users in mariadb
+Output display:
+
+MariaDB [(none)]> SELECT User FROM mysql.user;
++----------------------+  
+| User                 |  
++----------------------+  
+| datascientest        |  
+| datascientestdbadmin |  
+| mariadb.sys          |  
+| root                 |  
++----------------------+  
+5 rows in set (0.001 sec)
+We will now create a table in our database and insert data into it to see how to manipulate data present in our various tables. A table stores and organizes data in columns and rows as defined when the table is created.
+
+The general syntax for creating a table is:
+
+CREATE TABLE [IF NOT EXISTS] tablename(
+    column1,
+    column2,
+    ........,
+    constraints
+);
+  [IF NOT EXISTS] checks if an identical table exists in the database. If an identical table already exists, it will simply be ignored.
+To use a database, we must use the expression USE :
+
+USE datascientest ; # allows us to set the datascientest database as the one on which we execute our various actions
+We are going to create a table containing information about the course datascientest:
+
+
+Title	Genre	Company	Release Year
+terraform	devops	Datascientest	2022
+ansible	devops	Datascientest	2022
+When we create a table, we need to specify the following information:
+
+Column Names – We create the columns title, genre, company, and release_year for our table.
+
+Varchar of columns containing characters (VARCHAR) – Specifies the maximum number of characters stored in the column.
+
+The integer of columns containing numbers (INT) – Defines numeric variables containing integer numbers.
+
+Non-null rule (NOT NULL) – Indicates that each new record must contain information for the column.
+
+Primary key (PRIMARY) – Defines a column that identifies a record.
+
+Let's create a table using the CREATE command. Using the information from our movie example, the command is:
+
+CREATE TABLE cours(titre VARCHAR(50) NOT NULL,genre VARCHAR(30) NOT NULL,entreprise VARCHAR(60) NOT NULL,annee_sortie INT NOT NULL,PRIMARY KEY(titre));
+Output display:
+
+Query OK, 0 rows affected (0.008 sec)
+We will check that the table is created using the DESCRIBE command:
+
+DESCRIBE cours;
+Output display:
+
++--------------+-------------+------+-----+---------+-------+
+| Field        | Type        | Null | Key | Default | Extra |
++--------------+-------------+------+-----+---------+-------+
+| title        | varchar(50) | NO   | PRI | NULL    |       |
+| genre        | varchar(30) | NO   |     | NULL    |       |
+| company      | varchar(60) | NO   |     | NULL    |       |
+| release_year | int(11)     | NO   |     | NULL    |       |
++--------------+-------------+------+-----+---------+-------+
+4 rows in set (0.001 sec)
+The terminal returns information about the table:
+
+Field – Indicate the name of the column.
+
+Type – Specifies the data type for the column (varchar for characters, int for numbers).
+
+Null – Indicates whether the column can remain with null values.
+
+Key – Displays the main column.
+
+Default – Displays the default value of the column.
+
+Extra – Indicates additional information about the columns.
+
+We will insert the information about the course in the order of the columns: title, genre, company, and release year. We will use the INSERT command:
+
+INSERT INTO cours VALUE ("ansible", "devops", "datascientest", 2022);
+Output display:
+
+Query OK, 1 row affected (0.001 sec)
+We can check if the registration was successful by displaying the information present in the cours table of the datascientest database.
+
+SELECT * FROM cours;
+Output display:
+
+MariaDB [datascientest]> SELECT * FROM cours;
++---------+--------+---------------+--------------+
+| titre   | genre  | entreprise    | annee_sortie |
++---------+--------+---------------+--------------+
+| ansible | devops | datascientest |         2022 |
++---------+--------+---------------+--------------+
+1 row in set (0.000 sec)
+We can validate that the course data ansible recorded is indeed present.
+
+Situation setup:
+
+We need to insert the second record for the course terraform. This must be done in the order of the columns - title, genre, company, and release year. The course name is terraform, the genre is devops, the company is datascientest, and the year of creation is 2022.
+
+INSERT INTO cours VALUE ("terraform", "devops", "datascientest", 2022);
+SELECT * FROM cours;
+Output display:
+
+MariaDB [datascientest]> SELECT * FROM cours;
++-----------+--------+---------------+--------------+
+| title     | genre  | company       | release_year |
++-----------+--------+---------------+--------------+
+| ansible   | devops | datascientest |         2022 |
+| terraform | devops | datascientest |         2022 |
++-----------+--------+---------------+--------------+
+2 rows in set (0.000 sec)
+Create a view
+
+Views are SQL queries that display data based on defined parameters.\nWe will create a view named devops2025 to display the course titles whose release year is prior to 2023. We will use the CREATE VIEW command:
+
+CREATE VIEW devops2025 AS
+  SELECT titre FROM cours
+  WHERE annee_sortie < 2023;
+-- creating a view named devops2025 that will select the titles from the table cours,
+-- when the release years of the courses in question are less than 2023
+Output display:
+
+Query OK, 0 rows affected (0.005 sec)
+We can now display our view devops2025.
+
+SELECT * FROM devops2025;
+--displays all the information returned by the view devops2025
+Output display:
+
+MariaDB [datascientest]> SELECT * FROM devops2025;
++-----------+
+| title     |
++-----------+
+| ansible   |
+| terraform |
++-----------+
+2 rows in set (0.001 sec)
+Modify a view
+
+We will modify the view devops2025 to display the titles of the courses whose release year is 2023. We will add a new record in our courses table.
+
+Situation Setup:
+
+We need to insert the third record for the course linux.
+
+This must be done in the order of the columns: title, genre, company, and release_year.
+
+With the following information:
+
+Name: Linux
+
+Genre : system administrator
+
+Company: datascientest
+
+Release year: 2023.
+
+INSERT INTO cours VALUE ("Linux", "system administrator", "datascientest", 2023);
+SELECT * FROM cours;
+Output display:
+
+MariaDB [datascientest]> SELECT * FROM cours;
++-----------+------------------------+---------------+--------------+
+| title     | genre                  | company       | year_of_release |
++-----------+------------------------+---------------+--------------+
+| ansible   | devops                 | datascientest |         2022 |
+| Linux     | system administrator    | datascientest |         2023 |
+| terraform | devops                 | datascientest |         2022 |
++-----------+------------------------+---------------+--------------+
+We will now modify our view with the command ALTER VIEW:
+
+ALTER VIEW devops2025 AS
+  SELECT titre FROM cours
+  WHERE annee_sortie = 2023;
+Output display:
+
+Query OK, 0 rows affected (0.007 sec)
+Let's now validate that the view devops2025 has been modified:
+
+SELECT * FROM devops2025;
+Output display:
+
+MariaDB [datascientest]> SELECT * FROM devops2025;
++-------+
+| title |
++-------+
+| Linux |
++-------+
+1 row in set (0.001 sec)
+The output now displays the course linux output in 2025.
+
+c.3 - SQL Command to Manage a Database
+We can list some commands that will be useful for our daily tasks:
+
+
+Command	Usage	Syntax
+mysql	Allows the user to connect to the MySQL CLI	MYSQL -U [USERNAME] -P;
+Quit	Exits the MySQL CLI	EXIT;
+Clear	Clears the MySQL shell	SYSTEM CLEAR;
+Create User	Creates a new user	CREATE USER [NEW_USER@LOCALHOST] IDENTIFIED BY [NEW_PASSWORD];
+Show Users	Displays all users who have access to the MySQL client	SELECT [USER], HOST FROM MYSQL.[USER];
+Drop User	To remove an existing user	DROP USER [USERNAME@LOCALHOST];
+Grant All Privileges	Grants privileges to a MySQL user	GRANT ALL PRIVILEGES ON . TO [USERNAME@LOCALHOST];
+Show Grants	Displays the privileges granted to a MySQL user	SHOW GRANTS FOR [USERNAME@LOCALHOST];
+Revoke All Privileges	Revokes all privileges granted to a MySQL user	REVOKE ALL PRIVILEGES, GRANT OPTION FROM [USERNAME@LOCALHOST];
+mysqldump	Creates a backup of a set of SQL statements that can be used to recreate the database object definitions and the original table data.	MYSQLDUMP -U [USERNAME] -P [DATABASE_NAME] > [DATABASE_NAME]_backup.SQL
+
+c.4 - MySQL Database Commands - Data Definition Language (DDL)
+
+Command	Usage	Syntax
+Show databases	Displays all available databases on the MySQL server.	SHOW DATABASE;
+Create database	Creates a new database if it does not exist.	CREATE DATABASE [DATABASE_NAME];
+Drop database	To permanently delete an existing database.	DROP DATABASE [DATABASE_NAME];
+Alter database	Changes or modifies the characteristics of an existing database.	ALTER DATABASE [DATABASE_NAME] ALTEROPTION;
+Use database	Allows you to use a specific database or switch from the current database to another database.	USE [DATABASE_NAME];
+
+c.5 - Commands to manage tables
+
+Command	Usage	Syntax
+Show tables	Displays all tables in the current database.	SHOW TABLES;
+Create a table	Creates a new table in the current database.	CREATE TABLE [TABLE_NAME] (COLUMN1 DATA_TYPE, COLUMN2 DATA_TYPE, COLUMN3 DATA_TYPE, .... CONSTRAINTS .... );
+Modify table (add column)	Adds a new column to an existing table.	ALTER TABLE [TABLE_NAME] ADD COLUMN_NAME DATA_TYPE;
+Modify table (drop column)	Removes a column from an existing table.	ALTER TABLE [TABLE_NAME] DROP COLUMN COLUMN_NAME;
+Modify table (modify column)	Modifies an existing column in an already existing table.	ALTER TABLE [TABLE_NAME] ALTER COLUMN COLUMN_NAME DATA_TYPE;
+Modify table (add primary key)	Modifies or adds a primary key to an existing table.	ALTER TABLE [TABLE_NAME] ADD PRIMARY KEY (COLUMN_NAME,...);
+Modify table (drop primary key)	Removes an existing primary key from a table.	ALTER TABLE [TABLE_NAME] DROP PRIMARY KEY;
+Modify table (add foreign key)	Creates a foreign key on an existing table.	ALTER TABLE [TABLE_NAME1] ADD FOREIGN KEY [COLUMN1] REFERENCES [TABLE_NAME2] [COLUMN2];
+Modify table (drop foreign key)	Removes an existing foreign key from an already existing table.	ALTER TABLE [TABLE_NAME] DROP FOREIGN KEY FOREIGNKEY_NAME;
+Rename table	Modifies the name of an existing table.	RENAME TABLE OLD_[TABLE_NAME] TO [NEW_TABLE_NAME];
+Drop table	Removes the entire table along with its definition.	DROP TABLE [TABLE_NAME];
+Truncate table	Removes all records from a MySQL table.	TRUNCATE TABLE [TABLE_NAME];
+Describe table	Displays all columns of an existing table.	DESCRIBE [TABLE_NAME];
+Describe column of table	Displays all values stored in a particular column.	DESCRIBE [TABLE_NAME] [COLUMN_NAME];
+
+c.6 - Backup and Restore
+With MariaDB, we can use the mysql command to restore the database from a backup file.
+
+mysqldump is a command-line utility used to generate a logical backup of a MariaDB database in the form of a single file with a .sql extension containing a set of SQL statements.
+
+The utility helps us to empty MySQL tables, multiple databases, or their objects. Let's keep in mind that it is not possible to back up databases or MySQL data into separate files with the .sql extensions using the mysqldump utility.
+
+We need to have access to the running MySQL server to use the mysqldump and mysql commands. These commands are available from our machine, without needing to connect to our database management system.
+
+Save a database
+
+We will use mysqldump to back up our database datascientest. The syntax is as follows:
+
+mysqldump -u [user] –p [database_name] > [file_to_generate.sql]
+The parameters include:
+
+-u [user] is a username to connect to a MySQL server.
+
+-p is a flag for a password prompt for the username we use to log in to the server.
+
+nomdelabasededonnees is the name of the empty database where we want to restore our data present in the backup file.
+
+> is a parameter that refers to the process of generating a database.
+
+[fichier_a_generer.sql] is the path to the backup file.
+
+Context Setting:
+
+We will create a backup datascientest_backup.sql of our database datascientest so that we can restore it if needed. To simulate a disaster scenario, we will delete the database from the server. The command to delete the database can be found in the list of other available commands with MariaDb.
+
+sudo mysqldump -u root  datascientest -p > datascientest_backup.sql # generates our database into a file named datascientest_backup.sql in our current directory
+sudo mariadb -u root -p # connection to MariaDB
+DROP DATABASE datascientest; # Deletion of the datascientest database
+SHOW DATABASES; # Lists the databases to ensure that the database is no longer present
+Output display:
+
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| mysql              |
+| performance_schema |
+| sys                |
++--------------------+
+4 rows in set (0.001 sec)
+We can display the content of our file datascientest_backup.sql.
+
+cat datascientest_backup.sql
+Output display:
+
+-- MariaDB dump 10.19  Distrib 10.6.11-MariaDB, for debian-linux-gnu (x86_64)
+--
+-- Host: localhost    Database: datascientest
+-- ------------------------------------------------------
+-- Server version       10.6.11-MariaDB-1:10.6.11+maria~ubu2004
+
+/<i>!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT</i>/;
+/<i>!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS</i>/;
+/<i>!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION</i>/;
+/<i>!40101 SET NAMES utf8mb4</i>/;
+/<i>!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE</i>/;
+/<i>!40103 SET TIME_ZONE='+00:00'</i>/;
+/<i>!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0</i>/;
+/<i>!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0</i>/;
+/<i>!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO'</i>/;
+/<i>!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0</i>/;
+
+--
+-- Table structure for table `cours`
+--
+
+DROP TABLE IF EXISTS `cours`;
+/<i>!40101 SET @saved_cs_client     = @@character_set_client</i>/;
+/<i>!40101 SET character_set_client = utf8</i>/;
+CREATE TABLE `cours` (
+  `titre` varchar(50) NOT NULL,
+  `genre` varchar(30) NOT NULL,
+  `entreprise` varchar(60) NOT NULL,
+  `annee_sortie` int(11) NOT NULL,
+  PRIMARY KEY (`titre`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+/<i>!40101 SET character_set_client = @saved_cs_client</i>/;
+
+--
+-- Dumping data for table `cours`
+--
+
+LOCK TABLES `cours` WRITE;
+/<i>!40000 ALTER TABLE `cours` DISABLE KEYS</i>/;
+INSERT INTO `cours` VALUES ('ansible','devops','datascientest',2022),('Linux','administrateur systeme','datascientest',2023),('terraform','devops','datascientest',2022);
+/<i>!40000 ALTER TABLE `cours` ENABLE KEYS</i>/;
+UNLOCK TABLES;
+
+--
+-- Estructura de tabla temporal para la vista `devops2025`
+--
+
+DROP TABLE IF EXISTS `devops2025`;
+/<i>!50001 DROP VIEW IF EXISTS `devops2025`</i>/;
+SET @saved_cs_client     = @@character_set_client;
+SET character_set_client = utf8;
+/*!50001 CREATE VIEW `devops2025` AS SELECT
+ 1 AS `titre` */;
+SET character_set_client = @saved_cs_client;
+
+--
+-- Final view structure for view `devops2025`
+--
+
+/<i>!50001 DROP VIEW IF EXISTS `devops2025`</i>/;
+/<i>!50001 SET @saved_cs_client          = @@character_set_client</i>/;
+/<i>!50001 SET @saved_cs_results         = @@character_set_results</i>/;
+/<i>!50001 SET @saved_col_connection     = @@collation_connection</i>/;
+/<i>!50001 SET character_set_client      = utf8mb3</i>/;
+/<i>!50001 SET character_set_results     = utf8mb3</i>/;
+/<i>!50001 SET collation_connection      = utf8mb3_general_ci</i>/;
+/<i>!50001 CREATE ALGORITHM=UNDEFINED</i>/
+/<i>!50013 DEFINER=`root`@`localhost` SQL SECURITY DEFINER</i>/
+/<i>!50001 VIEW `devops2025` AS select `cours`.`titre` AS `titre` from `cours` where `cours`.`annee_sortie` = 2023</i>/;
+/<i>!50001 SET character_set_client      = @saved_cs_client</i>/;
+/<i>!50001 SET character_set_results     = @saved_cs_results</i>/;
+/<i>!50001 SET collation_connection      = @saved_col_connection</i>/;
+/<i>!40103 SET TIME_ZONE=@OLD_TIME_ZONE</i>/;
+
+/<i>!40101 SET SQL_MODE=@OLD_SQL_MODE</i>/;
+/<i>!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS</i>/;
+/<i>!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS</i>/;
+/<i>!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT</i>/;
+/<i>!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS</i>/;
+/<i>!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION</i>/;
+/<i>!40111 SET SQL_NOTES=@OLD_SQL_NOTES</i>/;
+
+-- Dump completed on 2022-11-15 14:49:26
+Restore the database
+
+Now, we can restore our database datascientest from the backup file. The syntax of the command is as follows:
+
+mysql -u [user] -p [database_name] < [file_to_restore.sql]
+The parameters include:
+
+-u [user] is a username to connect to a MySQL server.
+
+-p is a flag for a password prompt for the username we use to log in to the server.
+
+nomdelabasededonnees is the name of the empty database where we want to restore our data present in the backup file.
+
+< is a parameter that refers to the database restoration process.
+
+[fichier_a_restaurer.sql] is the path to the backup file.
+
+Thus, to restore the database datascientest, we can execute the following command:
+
+mysql --host=datascientest_host --user=root --port=3306 -p datascientest < datascientest.sql
+Where datascientest_host is the target server with the empty database into which we will load the data from the file datascientest.sql. If the database is located on the local machine as in our case, there is no need to pass the --host=datascientest_host option. The default connection port is port 3306.
+
+Situation setup:
+
+We now want to restore our database and check that we have all the data present.
+
+sudo mariadb -u root -p # connect to MariaDB
+CREATE DATABASE datascientest; # Create the datascientest database
+exit # disconnect from MariaDB
+sudo mysql -u root  datascientest -p < datascientest_backup.sql # restore the backup contained in the datascientest_backup.sql file into our database
+sudo mariadb -u root -p # connect to MariaDB
+SHOW DATABASES; # List all databases
+USE datascientest; # Use the datascientest database
+SELECT * FROM cours; # List the records from the cours table
+Output display:
+
+MariaDB [datascientest]> select * FROM cours;
++-----------+------------------------+---------------+--------------+
+| title     | genre                  | company       | year_released |
++-----------+------------------------+---------------+--------------+
+| ansible   | devops                 | datascientest |         2022 |
+| Linux     | system administrator    | datascientest |         2023 |
+| terraform | devops                 | datascientest |         2022 |
++-----------+------------------------+---------------+--------------+
+3 rows in set (0.000 sec)
+Restore all databases from the backup file
+
+With the Mysql command line, we can restore not only a single database but all databases on the server in bulk.
+
+The syntax to restore all MySQL databases from a backup file is as follows:
+
+mysql -u root -p < touteslesbases.sql
+Where touteslesbases.sql is a path to the backup file containing a backup of all the databases on the server.
+
+D - Configure MariaDB for Optimal Performance
+The default settings of MariaDB only allow for optimal performance on desktop systems, due to their limited resource usage. However, if we plan to deploy MariaDB in a production environment, it is necessary to follow certain additional steps to configure it to effectively handle large workloads.
+
+In this section, we will explore some variables that we can configure in order to make the most of our database server.
+
+MariaDB is generally configured by modifying the configuration file /etc/mysql/my.cnf, which contains a number of variables influencing the performance of the database.
+
+To optimize the performance of the database server, it is important to consider the following points:
+
+Specify the size of the InnoDB buffer pool.
+Disable swapping (memory swapping).
+Specify the maximum number of connections.
+Disable DNS lookups in MariaDB.
+Specify the size of the query cache.
+Enable slow query logs.
+Specify the duration of inactive connections.
+Let's examine these different options and their usefulness.
+
+d.1 - Specify the size of the InnoDB buffer pool
+InnoDB is the default storage engine for MariaDB since the replacement of MyISAM in 2010. It can be configured to ensure reliability and high performance for the database server.
+
+In MariaDB, caching and indexing can be enabled by setting the innodb_buffer_pool_size parameter in the /etc/mysql/my.cnf file. The memory allocated to this parameter depends on the available RAM on the server.
+
+It is common to set this value to 70% of the available RAM. However, this approach is not optimal for systems with a large amount of memory.
+
+To determine the optimal size of the buffer pool on our database server, it is best to execute the following query:
+
+SELECT CEILING(Total_InnoDB_Bytes*1.6/POWER(1024,3)) RIBPS FROM
+(SELECT SUM(data_length+index_length) Total_InnoDB_Bytes FROM
+  information_schema.tables WHERE engine='InnoDB') A;
+This will provide the recommended size of the InnoDB buffer pool (RIBPS).
+
+Output display:
+
++-------+
+| RIBPS |
++-------+
+|     1 |
++-------+
+1 row in set (0.035 sec)
+According to the output above, the recommended size of the InnoDB buffer pool is 1 GB. This value may vary in other cases. So, let's edit the configuration file /etc/mysql/my.cnf and add the following line.
+
+We need to ensure that we specify the memory size based on the result we obtain.
+
+[mysqld]
+innodb_buffer_pool_size = 1G
+We can save our changes and restart the MariaDB service to apply the changes.
+
+sudo systemctl restart mariadb # restart the mariadb service
+d.2 - Disable SWAP
+The default settings of MariaDB only allow for optimal performance on desktop systems, due to their limited resource usage. However, if we plan to deploy MariaDB in a production environment, it is necessary to follow certain additional steps to configure it to effectively handle large workloads.
+
+In this section, we will explore some variables that we can configure in order to make the most of our database server.
+
+MariaDB is generally configured by modifying the configuration file /etc/mysql/my.cnf, which contains a number of variables influencing the performance of the database.
+
+To optimize the performance of the database server, it is important to consider the following points:
+
+Specify the size of the InnoDB buffer pool.
+Disable swapping (memory swapping).
+Specify the maximum number of connections.
+Disable DNS lookups in MariaDB.
+Specify the size of the query cache.
+Enable slow query logs.
+Specify the duration of inactive connections.
+Let's examine these different options and their usefulness.
+
+InnoDB is the default storage engine for MariaDB since the replacement of MyISAM in 2010. It can be configured to ensure reliability and high performance for the database server.
+
+In MariaDB, caching and indexing can be enabled by setting the innodb_buffer_pool_size parameter in the /etc/mysql/my.cnf file. The memory allocated to this parameter depends on the available RAM on the server.
+
+It is common to set this value to 70% of the available RAM. However, this approach is not optimal for systems with a large amount of memory.
+
+To determine the optimal size of the buffer pool on our database server, it is best to run the following query:
+
+The swap space, or SWAP, is a special area of the hard drive used when RAM is nearly or completely saturated. When a swap occurs, reads and writes to the disk significantly slow down the server. Without appropriate measures, the server may freeze.
+
+We therefore need to disable SWAP by executing the following command in our terminal:
+
+sudo sysctl -w vm.swappiness=0
+d.3 - Specify the maximum number of connections
+The max_connections parameter defines the maximum number of simultaneous connections allowed on our MariaDB server. Too many connections generally lead to an overload of the CPU and memory.
+
+The value of max_connections can be set via an SQL query. In the example below, we set it to 500 simultaneous connections:
+
+sudo mariadb -u root -p  # connect to MariaDB
+SET GLOBAL max_connections=500;  # set the maximum number of connections to 500
+d.4 - Disable DNS Lookups in MariaDB/MySQL
+When a new connection is initiated, MariaDB performs a DNS lookup to resolve the visitor's IP address. This can lead to delays in case of issues with the DNS server or when an invalid DNS configuration is detected.
+
+To disable DNS lookups, simply add the following line in the configuration file /etc/mysql/my.cnf :
+
+skip-name-resolve
+Then restart the MariaDB service to apply the changes:
+
+sudo systemctl restart mariadb  # restarts the MariaDB service
+d.5 - Define the size of the request cache
+Another crucial parameter to include is the query_cache_size directive. It is used to cache all repetitive queries concerning the same data.
+
+The value of this parameter should not exceed 64 MB for small websites. Even for high-traffic sites, it is not recommended to set it in gigabytes, as this can significantly degrade database performance.
+
+So, once again, let's edit the file /etc/mysql/my.cnf as follows:
+
+query_cache_size=64M
+Let's save the changes and, once again, restart the MariaDB service.
+
+d.6 - Define the value of inactive connections
+The default settings of MariaDB only allow for optimal performance on desktop systems, due to their limited resource usage. However, if we plan to deploy MariaDB in a production environment, it is necessary to follow certain additional steps to configure it to effectively handle large workloads.
+
+In this section, we will explore some variables that we can configure in order to make the most of our database server.
+
+MariaDB is generally configured by modifying the configuration file /etc/mysql/my.cnf, which contains a number of variables influencing the performance of the database.
+
+To optimize the performance of the database server, it is important to consider the following points:
+
+Specify the size of the InnoDB buffer pool.
+Disable swapping (memory swapping).
+Specify the maximum number of connections.
+Disable DNS lookups in MariaDB.
+Specify the size of the query cache.
+Enable slow query logs.
+Specify the duration of inactive connections.
+Let's examine these different options and their usefulness.
+
+d.7 - Specify the size of the InnoDB buffer pool
+InnoDB is the default storage engine for MariaDB since the replacement of MyISAM in 2010. It can be configured to ensure reliability and high performance for the database server.
+
+In MariaDB, caching and indexing can be enabled by setting the innodb_buffer_pool_size parameter in the /etc/mysql/my.cnf file. The memory allocated to this parameter depends on the available RAM on the server.
+
+It is common to set this value to 70% of the available RAM. However, this approach is not optimal for systems with a large amount of memory.
+
+To determine the optimal size of the buffer pool on our database server, it is best to execute the following query:
+
+d.8 - Disable SWAP
+The swap space, or SWAP, is a special area of the hard drive used when RAM is nearly or completely saturated. When a swap occurs, reads and writes to the disk significantly slow down the server. Without appropriate measures, the server may freeze.
+
+We therefore need to disable SWAP by executing the following command in our terminal:
+
+sudo sysctl -w vm.swappiness=0
+d.9 - Specify the maximum number of connections
+The max_connections parameter defines the maximum number of simultaneous connections allowed on our MariaDB server. Too many connections generally lead to an overload of the CPU and memory.
+
+The value of max_connections can be set via an SQL query. In the example below, we set it to 500 simultaneous connections:
+
+sudo mariadb -u root -p  # connect to MariaDB
+SET GLOBAL max_connections = 500;  # set the maximum number of connections to 500
+d.10 - Disable DNS Lookups in MariaDB/MySQL
+When a new connection is initiated, MariaDB performs a DNS lookup to resolve the visitor's IP address. This can lead to delays in case of issues with the DNS server or when an invalid DNS configuration is detected.
+
+To disable DNS lookups, simply add the following line in the configuration file /etc/mysql/my.cnf :
+
+skip-name-resolve
+Then restart the MariaDB service to apply the changes:
+
+sudo systemctl restart mariadb  # restarts the MariaDB service
+d.11 - Define the size of the request cache
+Another crucial parameter to include is the query_cache_size directive. It is used to cache all repetitive queries concerning the same data.
+
+The value of this parameter should not exceed 64 MB for small websites. Even for high-traffic sites, it is not recommended to set it in gigabytes, as this can significantly degrade database performance.
+
+d.12 - Specify the duration of inactive connections
+Inactive connections can consume resources, leading to degradation of database performance. These connections enter a "sleep" state and can remain inactive (idle) for long periods. We can search for inactive connections by executing the following command:
+
+sudo mysqladmin processlist -u root -p | grep -i "Sleep"
+Using the wait_timeout directive, we can close or interrupt inactive connections. By default, this value is 28,800 seconds and can be reduced to 60 seconds. Therefore, we can add the following line to the configuration file /etc/mysql/my.cnf :
+
+wait_timeout=60
+d.13 - Enable slow query logs
+We can also improve the performance of our database server by logging queries that take a long time to execute. This makes it easier to troubleshoot queries that are slowing down the server.
+
+To enable the slow query log, add the following lines to the configuration file /etc/mysql/my.cnf :
+
+slow-query-log = 1 # allows querying the slow logs.
+slow-query-log-file = /var/lib/mysql/mysql-slow.log # informs the database server of the file to which slow queries will be exported.
+long_query_time = 1 # The last parameter specifies the maximum threshold in seconds for a database query beyond which it is considered a slow query.
+We have successfully installed, started, enabled, and secured the MariaDB database server using the shell script mysql_secure_installation.
+
+We also covered the administration aspects of our databases and examined some of the best practices we can use to ensure optimal performance of our database server.
+
+Consult the official MariaDB documentation for more information about the database server.
