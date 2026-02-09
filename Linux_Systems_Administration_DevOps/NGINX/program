@@ -1,0 +1,1088 @@
+Linux System Administration
+V - NGINX
+
+
+
+A - Presentation of NGINX
+NGINX is a high-performance web server and was developed to meet increasingly significant business needs. However, NGINX is not the only web server on the market: one of its main competitors is Apache HTTP Server (httpd).
+
+When it was created, NGINX was designed as a reverse proxy. It can also act as a load balancer, meaning it can orchestrate a workload across multiple machines.
+
+It is on these roles initially planned for NGINX that we will work in this course: to create the entry point (reverse proxy) of our architecture and balance the load between the machines that will host our website.
+
+In comparison with Apache, we can note three main differences that give NGINX certain advantages:
+
+It allows for easier and faster access to static files while using very few resources.
+It can handle a larger number of simultaneous requests.
+NGINX is also much easier to configure thanks to a configuration file syntax inspired by various programming languages, resulting in compact and easily maintainable files.
+NGINX is faster in delivering static content while remaining relatively light on resources, as it does not incorporate a dynamic programming language processor. When a request for static content arrives, NGINX simply responds with the requested file without executing any additional processes.
+
+This does not mean that NGINX cannot handle requests requiring a dynamic programming language. In such cases, NGINX delegates tasks to separate processes such as PHP-FPM, Node.js, or Python. Once these processes have completed their work, NGINX returns the response to the client.
+
+B - Domain Name Creation
+To continue this course, we will need a domain name. We will therefore create an account on cloudns. The site offers a free version with a domain name available and usable for life.
+
+In our example, we will use the domain name cours-datascientest.cloudns.ph, but it is recommended to choose your own DNS name. Indeed, each domain name is unique and cannot be reused when creating.
+
+
+It is therefore time to create our account, to do this click on Log in:
+
+
+If you do not have an account yet, click on Create a new account:
+
+
+Fill in the information related to our account, and click on Sign Up.
+
+
+You should receive an email that allows you to activate your account. Then click on the activation link:
+
+
+You can now log in with the information provided at account creation:
+
+
+Once on the dashboard, click on the create a zone button in the DNS Hosting menu.
+
+
+Select available zone, which will allow us to have a free domain that we can use throughout this training.
+
+
+We are therefore required to enter a domain for our account. For this course, it will be cours-datascientest. Once finished, click on the Register button.
+
+
+Then, click on your domain cours-datascientest.cloudns.ph to create records.
+
+
+We can notice a number of already existing configurations, click on the Add a new record button.
+
+
+We need to choose type A, fill in the "subdomain" field, and finally provide the IP address of the NGINX server in the points to field so that our subdomain always points to our server. You can now click on Save to register the new subdomain.
+
+
+We can now see that our subdomain is correctly configured and points to the IP address of our server. However, it takes about an hour for propagation to occur, so that the subdomain is accessible worldwide.
+
+We now have an operational domain that will serve us for the rest of the course.
+
+C - Installing NGINX
+Installing NGINX on a Linux based system is quite simple. The first step is to update the system after logging in, then install the package that allows nginx to be operational.
+
+Execute the following commands:
+
+sudo apt update && sudo apt upgrade -y # we update the packages and the operating system
+sudo apt install nginx -y # we install nginx and automatically confirm with the -y flag
+Once the installation is complete, NGINX should be automatically registered as a service with systemd. Therefore, we need to start the service and also ensure that it can run on system reboot:
+
+sudo systemctl enable nginx # starts the service at every system reboot
+sudo systemctl start nginx # starts the service now
+sudo systemctl status nginx # checks the status of the nginx service
+Output display:
+
+● nginx.service - Un servidor web de alto rendimiento y un servidor proxy inverso
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+     Active: active (running) desde el Mié 2022-11-16 09:59:20 UTC; hace 36s
+       Docs: man:nginx(8)
+   Main PID: 58183 (nginx)
+      Tasks: 3 (limit: 4689)
+     Memory: 4.1M
+     CGroup: /system.slice/nginx.service
+             ├─58183 nginx: proceso maestro /usr/sbin/nginx -g daemon on; master_process on;
+             ├─58184 nginx: proceso trabajador
+             └─58185 nginx: proceso trabajador
+
+Nov 16 09:59:19 ip-172-31-24-148 systemd[1]: Starting A high performance web server and a reverse proxy server...
+Nov 16 09:59:20 ip-172-31-24-148 systemd[1]: Started A high performance web server and a reverse proxy server.
+We can therefore go to the IP address of the server to validate that everything is working. We should arrive at the default page of nginx:
+
+
+We can therefore confirm that Nginx is indeed installed.
+
+D - NGINX Configuration
+As a web server, NGINX will need to serve static or dynamic content to clients. However, the way this content will be served is generally controlled by configuration files.
+
+The NGINX configuration files are located in the directory /etc/nginx/ and have the .conf extension. We can navigate to this directory to list the files present:
+
+cd /etc/nginx # move to the nginx directory
+ls -larth # display the list of files and directories with all information
+Output display:
+
+ total 72K
+ -rw-r--r--  1 root root  664 Feb  4  2019 uwsgi_params
+ -rw-r--r--  1 root root  636 Feb  4  2019 scgi_params
+ -rw-r--r--  1 root root  180 Feb  4  2019 proxy_params
+ -rw-r--r--  1 root root 1.5K Feb  4  2019 nginx.conf
+ -rw-r--r--  1 root root  3.9K Feb  4  2019 mime.types
+ -rw-r--r--  1 root root  2.2K Feb  4  2019 koi-win
+ -rw-r--r--  1 root root  2.8K Feb  4  2019 koi-utf
+ -rw-r--r--  1 root root 1007 Feb  4  2019 fastcgi_params
+ -rw-r--r--  1 root root  1.1K Feb  4  2019 fastcgi.conf
+ -rw-r--r--  1 root root  3.0K Feb  4  2019 win-utf
+ drwxr-xr-x  2 root root  4.0K Nov 10 06:38 modules-available
+ drwxr-xr-x  2 root root  4.0K Nov 10 06:38 conf.d
+ drwxr-xr-x  2 root root  4.0K Nov 16 09:59 sites-available
+ drwxr-xr-x  2 root root  4.0K Nov 16 09:59 snippets
+ drwxr-xr-x  8 root root  4.0K Nov 16 09:59 .
+ drwxr-xr-x  2 root root  4.0K Nov 16 09:59 sites-enabled
+ drwxr-xr-x  2 root root  4.0K Nov 16 09:59 modules-enabled
+ drwxr-xr-x 99 root root  4.0K Nov 16 09:59 ..
+The main configuration file for NGINX is the nginx.conf file. We can display its content:
+
+cat nginx.conf
+Content of the file :
+
+user www-data;
+worker_processes auto;
+pid /run/nginx.pid;
+include /etc/nginx/modules-enabled/*.conf;
+
+events {
+        worker_connections 768;
+        # multi_accept on;
+}
+
+http {
+
+        ##
+        # Basic Settings
+        ##
+
+        sendfile on;
+        tcp_nopush on;
+        tcp_nodelay on;
+        keepalive_timeout 65;
+        types_hash_max_size 2048;
+        # server_tokens off;
+
+        # server_names_hash_bucket_size 64;
+        # server_name_in_redirect off;
+
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+
+        ##
+        # SSL Settings
+        ##
+
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+        ssl_prefer_server_ciphers on;
+
+        ##
+        # Logging Settings
+        ##
+
+        access_log /var/log/nginx/access.log;
+        error_log /var/log/nginx/error.log;
+
+        ##
+        # Gzip Settings
+        ##
+
+        gzip on;
+
+        # gzip_vary on;
+        # gzip_proxied any;
+        # gzip_comp_level 6;
+        # gzip_buffers 16 8k;
+        # gzip_http_version 1.1;
+        # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+        ##
+        # Virtual Host Configs
+        ##
+
+        include /etc/nginx/conf.d/*.conf;
+        include /etc/nginx/sites-enabled/*;
+}
+
+
+#mail {
+#       # See sample authentication script at:
+#       # http://wiki.nginx.org/ImapAuthenticateWithApachePhpScript
+#
+#       # auth_http nginxserver.cours-datascientest.cloudns.ph/auth.php;
+#       # pop3_capabilities "TOP" "USER";
+#       # imap_capabilities "IMAP4rev1" "UIDPLUS";
+#
+#       server {
+#               listen     nginxserver.cours-datascientest.cloudns.ph:110;
+#               protocol   pop3;
+#               proxy      on;
+#       }
+#
+#       server {
+#               listen     nginxserver.cours-datascientest.cloudns.ph:143;
+#               protocol   imap;
+#               proxy      on;
+#       }
+#}
+Trying to understand this file in its current state would be tedious.
+
+Let's rename the file and create a new empty file:
+
+sudo mv nginx.conf nginx.conf.backup # renames the file nginx.conf to nginx.conf.backup
+sudo touch nginx.conf # creates a new empty file
+It is not recommended to directly modify the original file nginx.conf for best practices, even if you are sure of what you are doing.
+
+E - Set up a basic web server
+In this section, we will set up a basic static web server from scratch, with the aim of presenting the syntax and fundamental concepts of NGINX configuration files.
+
+e.1 - First configuration file
+Let's start by opening the newly created nginx.conf file:
+
+sudo nano /etc/nginx/nginx.conf
+We will use nano as the text editor. It is possible to use a more modern editor if you wish, but in a real context, it is more common to work with nano or vim on servers. Make sure to install these editors if necessary.
+
+After opening the file, let's update its content to look like this:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "Welcome to Datascientest, we are on the NGINX course!\n";
+    }
+}
+If you have experience in creating REST APIs, you may notice from the line
+
+return 200 "Welcome to Datascientest, we are on the NGINX course!\n";
+that the server is configured to respond with a status code 200 and the message "Welcome to Datascientest, we are on the NGINX course!".
+
+Don't worry if this seems unclear for now. We will explain this file line by line, but let's first see this configuration in action.
+
+e.2 - How to validate and reload configuration files
+After writing a new configuration file or updating an old one, the first step is to check if the file contains syntax errors. The nginx binary includes a -t option that allows you to validate NGINX configuration files.
+
+sudo nginx -t
+Output display:
+
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+If there are syntax errors, the validation command will report them, specifically indicating the line number concerned.
+
+Even if the configuration file is correct, NGINX will not use it automatically. NGINX reads the configuration file only at startup and continues to operate based on that.
+
+When you update the configuration file, it is necessary to explicitly ask NGINX to reload the configuration. There are two ways to do this:
+
+Restart the NGINX service by executing the command:
+sudo systemctl restart nginx
+Send a reload signal to NGINX by executing:
+sudo nginx -s reload
+The -s option allows you to send various signals to NGINX. The available signals are stop, quit, reload, and reopen. Once the configuration file is reloaded with nginx -s reload, you can check the configuration by sending a simple GET request to the server:
+
+curl -i http://nginxserver.cours-datascientest.cloudns.ph
+Example of output :
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 10:15:46 GMT
+Content-Type: text/plain
+Content-Length: 62
+Connection: keep-alive
+
+Welcome to Datascientest, we are on the NGINX course!
+The server responds with a status code 200 and the expected message.
+
+Each time the NGINX configuration is modified, it is necessary to send the reload signal using sudo nginx -s reload or to restart the service with sudo systemctl restart nginx. In the rest of the course, we will assume that this step is known and we will not repeat it systematically.
+
+If you access your server's address again, you will notice that the displayed page has changed.
+
+e.3 - Understanding directives and contexts
+The few lines of configuration we have written, although seemingly simple, introduce two essential concepts in NGINX files: directives and contexts.
+
+Technically, everything in an NGINX configuration file is a directive. There are two main types of directives:
+
+Simple Directives A simple directive consists of the directive name and its parameters, separated by spaces, such as listen or return. Simple directives end with a semicolon (;).
+
+Block Directives Block directives are similar to simple directives, but they end with a pair of braces { } that contain other instructions. A block directive that can contain other directives inside is called a context, such as events, http, or server.
+
+Main contexts in NGINX
+events { } The events context defines the global configuration regarding how NGINX handles connections. There can only be one events context in a valid configuration file.
+
+http { } The http context configures the handling of HTTP and HTTPS requests. There can only be one http context in a valid configuration file.
+
+server { } The server context is nested within http and allows for the configuration of multiple virtual servers within the same host. Multiple server contexts can exist in a valid file, each representing a distinct virtual host.
+
+main The main context corresponds to the main configuration file itself. Everything outside of the three previous contexts belongs to the main context.
+
+One can compare NGINX contexts to scopes in other programming languages, with some inheritance of directives between them. An alphabetical index of directives is available in the official NGINX documentation.
+
+We mentioned that there can be multiple server contexts in a configuration file. But when a request arrives, how does NGINX determine which server context should handle the request?
+
+The listen directive is one of the ways to identify the correct server context in a configuration. Consider the following scenario:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "Hello Learner, I am listening on port 80!\n";
+    }
+    server {
+        listen 443;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "Hello Learner, I am listening on port 443!\n";
+    }
+}
+Now, if we send a request using the curl command to the address http://nginxserver.cours-datascientest.cloudns.ph:80, we will receive "Hello Learner, I am listening on port 80!" as a response.
+
+And if we send a request using this same command to the address http://nginxserver.cours-datascientest.cloudns.ph:443, we will receive "Hello Learner, I am listening on port 443!" as a response.
+
+curl nginxserver.cours-datascientest.cloudns.ph:80
+Output display:
+
+Hello Learner, I am listening on port 80!
+We can also test listening on port 443:
+
+curl nginxserver.cours-datascientest.cloudns.ph:443
+Output display:
+
+Hello Learner, I am listening on port 443!
+These two server blocks are like two people holding telephone receivers, waiting to respond when a request reaches one of their numbers. Their numbers are indicated by the listen directives.
+
+In addition to the listen directive, there is also the server_name directive which is the domain name used to reach the server.
+
+Consider the following scenario of an imaginary course management application:
+
+You will need to create the subdomain laboratoire.notredomaine on cloudns and also associate it with the IP address of our server. In this case, we have two subdomains that point to the same server, nginxserver.cours-datascientest.cloudns.ph and laboratoire.cours-datascientest.cloudns.ph.
+
+Let's adapt our NGINX configuration file as follows:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "Our course platform!\n";
+    }
+
+    server {
+        listen 80;
+        server_name laboratoire.cours-datascientest.cloudns.ph;
+        return 200 "Our laboratory platform!\n";
+    }
+}
+This is a basic example of the idea of virtual hosts. We can run two distinct applications under different server names, all on the same server.
+
+If we send a request using the curl command to the address: http://nginxserver.cours-datascientest.cloudns.ph, we will receive "our course platform!" as a response.
+
+If we send a request using the curl command to the address: http://laboratoire.cours-datascientest.cloudns.ph, we will receive "our laboratory platform!" as a response.
+
+We could have done it from our local machine without necessarily creating DNS entries. Simply by modifying the file /etc/hosts. However, this will no longer work when we test on a machine different from the one on which we installed NGINX. Let's also set this up for understanding. We will modify the file /etc/hosts :
+
+sudo nano /etc/hosts
+We are going to add these two lines:
+
+127.0.0.1 nginxserver.cours-datascientest.cloudns.ph
+127.0.0.1 laboratoire.cours-datascientest.cloudns.ph
+Context Setting:
+
+We want to make requests using curl to validate the configuration. You must, of course, reload the NGINX configuration to perform the tests.
+
+Finally, the return directive is responsible for sending a valid response to the user. This directive takes two parameters: the status code and the message string to return.
+
+e.4 - Serving Static Content with NGINX
+Now that we understand how to write a basic configuration file for NGINX, let's upgrade the configuration to serve static files instead of plain text responses.
+
+In order to serve static content, we first need to store it somewhere on our server. If we list the files and the directory at the root of our server using ls, we will find a directory called /var:
+
+ls -larth /
+Output display:
+
+ total 76K
+ lrwxrwxrwx   1 root root    8 Sep 14 22:56 sbin -> usr/sbin
+ lrwxrwxrwx   1 root root    7 Sep 14 22:56 bin -> usr/bin
+ lrwxrwxrwx   1 root root   10 Sep 14 22:56 libx32 -> usr/libx32
+ lrwxrwxrwx   1 root root    9 Sep 14 22:56 lib64 -> usr/lib64
+ lrwxrwxrwx   1 root root    9 Sep 14 22:56 lib32 -> usr/lib32
+ lrwxrwxrwx   1 root root    7 Sep 14 22:56 lib -> usr/lib
+ drwxr-xr-x   2 root root 4.0K Sep 14 22:56 opt
+ drwxr-xr-x   2 root root 4.0K Sep 14 22:56 media
+ drwxr-xr-x  14 root root 4.0K Sep 14 22:57 usr
+ drwx------   2 root root  16K Sep 14 22:58 lost+found
+ drwxr-xr-x   8 root root 4.0K Sep 14 23:01 snap
+ drwxr-xr-x   3 root root 4.0K Nov 13 05:32 home
+ drwxr-xr-x   2 root root 4.0K Nov 13 11:28 datascientest
+ dr-xr-xr-x  13 root root    0 Nov 14 06:12 sys
+ dr-xr-xr-x 177 root root    0 Nov 14 06:12 proc
+ drwxr-xr-x   3 root root 4.0K Nov 14 08:11 mnt
+ drwxr-xr-x  18 root root 3.3K Nov 16 09:55 dev
+ drwxr-xr-x  20 root root 4.0K Nov 16 09:57 ..
+ drwxr-xr-x  20 root root 4.0K Nov 16 09:57 .
+ drwxr-xr-x   4 root root 4.0K Nov 16 09:58 boot
+ drwxr-xr-x  14 root root 4.0K Nov 16 09:59 var
+ drwxrwxrwt  14 root root 4.0K Nov 16 09:59 tmp
+ drwxr-xr-x  26 root root  960 Nov 16 10:41 run
+ drwxr-xr-x  99 root root 4.0K Nov 16 10:58 etc
+ drwx------   5 root root 4.0K Nov 16 11:14 root
+ drwxr-xr-x   3 root root 4.0K Nov 16 11:15 srv
+The directory /var contains another directory www which is intended to hold site-specific data that is served to our users. We will create a directory called datascientest there, now let's go into this directory and create an html file with the content welcome to the nginx course.
+
+cd /var/www/
+sudo mkdir datascientest_website
+cd  datascientest_website
+sudo touch index.html # create the index.html file in which we add the content "welcome to the nginx course"
+Now that we have the static content to broadcast, let's update our configuration:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root /var/www/datascientest_website/;
+    }
+}
+The return directive has now been replaced by a root directive. This directive is used to declare the root directory of a site.
+
+By writing root /var/www/datascientest_website/;, we are asking NGINX to look for files to serve in the directory /var/www/datascientest_website/ if a request reaches this server. Since NGINX is a web server, it is smart enough to serve the default file index.html.
+
+Let's see if our configuration works. Let's reload the NGINX configuration file and we can test:
+
+sudo nginx -s reload
+curl nginxserver.cours-datascientest.cloudns.ph
+Output display:
+
+welcome to the nginx course
+e.5 - Management of Static File Types
+Although NGINX is smart enough to find the default index.html file, it is not capable of interpreting different types of files. To solve this problem, we can update our configuration when we also need it to read css files:
+
+events {
+}
+http {
+    types {
+        text/html html;
+        text/css css;
+    }
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root /var/www/datascientest_website/;
+    }
+}
+The only change made to the code is the addition of a new context types, nested within the http block. As its name suggests, this context is used to configure file types.
+
+For example, by writing text/html html in this context, we indicate to NGINX that any file ending with the .html extension should be interpreted as text/html.
+
+One might think that defining only the type text/css for CSS files would be sufficient, since HTML files are correctly parsed by default. However, this is not the case.
+
+Indeed, as soon as a types context is introduced in the configuration, NGINX only analyzes those files that are explicitly defined. Thus, if we only define text/css css, NGINX will treat HTML files as plain text.
+
+e.6 - Include partial configuration files
+Manually mapping file types within the types context may be suitable for small projects, but it quickly becomes tedious and prone to errors for larger projects.
+
+To address this issue, NGINX provides a practical solution. If we list the files present in the directory /etc/nginx again, we notice the presence of a file named mime.types.
+
+ls -larth /etc/nginx
+Output display:
+
+
+total 76K
+-rw-r--r--  1 root root  664 Feb  4  2019 uwsgi_params
+-rw-r--r--  1 root root  636 Feb  4  2019 scgi_params
+-rw-r--r--  1 root root  180 Feb  4  2019 proxy_params
+-rw-r--r--  1 root root 1.5K Feb  4  2019 nginx.conf.backup
+-rw-r--r--  1 root root  3.9K Feb  4  2019 mime.types
+-rw-r--r--  1 root root  2.2K Feb  4  2019 koi-win
+-rw-r--r--  1 root root  2.8K Feb  4  2019 koi-utf
+-rw-r--r--  1 root root 1007 Feb  4  2019 fastcgi_params
+-rw-r--r--  1 root root  1.1K Feb  4  2019 fastcgi.conf
+-rw-r--r--  1 root root  3.0K Feb  4  2019 win-utf
+drwxr-xr-x  2 root root  4.0K Nov 10 06:38 modules-available
+drwxr-xr-x  2 root root  4.0K Nov 10 06:38 conf.d
+drwxr-xr-x  2 root root  4.0K Nov 16 09:59 sites-available
+drwxr-xr-x  2 root root  4.0K Nov 16 09:59 snippets
+drwxr-xr-x  2 root root  4.0K Nov 16 09:59 sites-enabled
+drwxr-xr-x  2 root root  4.0K Nov 16 09:59 modules-enabled
+drwxr-xr-x 99 root root  4.0K Nov 16 10:58 ..
+-rw-r--r--  1 root root  205 Nov 16 14:07 nginx.conf
+drwxr-xr-x  8 root root  4.0K Nov 16 14:07 .
+Let's see the content of this file:
+
+cat /etc/nginx/mime.types
+Output display:
+
+types {
+    text/html                             html htm shtml;
+    text/css                              css;
+    text/xml                              xml;
+    image/gif                             gif;
+    image/jpeg                            jpeg jpg;
+...
+...
+    video/x-ms-wmv                        wmv;
+    video/x-msvideo                       avi;
+}
+The file contains a long list of file types and their extensions. To use this file in our configuration file, let's update our configuration to look like this:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root /var/www/datascientest_website/;
+    }
+}
+The old types context has been replaced by a new include directive. As its name suggests, this directive allows us to include the content of other configuration files.
+
+e.7 - Dynamic Routing with NGINX
+The configuration we wrote in the previous section was a very simple static content server configuration. All this configuration did was match a file from the root of the site corresponding to the address the client visits.
+
+Thus, if the client requests existing files at the root such as index.html, about.html, or mini.min.css, NGINX will return the file. But if we visit a route such as http://nginxserver.cours-datascientest.cloudns.ph/nothing, it will respond with the default 404 page.
+
+In this section, we will explore the location context, variables, redirections, rewrites, and the try_files directive.
+
+Context Location
+
+We will talk about the location context in this section. Let's update the configuration as follows:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        location /cours {
+            return 200 "Nginx. \nAdministration Linux.\n";
+        }
+    }
+}
+We replaced the root directive with a new context called location. This context is generally nested within server blocks. There can be multiple location contexts within a server context. If we send a request using the curl command to the address http://nginxserver.cours-datascientest.cloudns.ph/cours, we will receive a response code 200 and a list of courses (_nginx_ and _linux_).
+
+curl -i  http://nginxserver.cours-datascientest.cloudns.ph/cours
+Output display:
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 14:59:26 GMT
+Content-Type: text/plain
+Content-Length: 30
+Connection: keep-alive
+
+Nginx.
+Administration Linux.
+Now, if we send a request to http://nginxserver.cours-datascientest.cloudns.ph/cours-test, we will get the same response:
+
+curl -i http://nginxserver.cours-datascientest.cloudns.ph/cours-test
+Output display:
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 15:00:21 GMT
+Content-Type: text/plain
+Content-Length: 30
+Connection: keep-alive
+
+Nginx.
+Administration Linux.
+This happens because, by writing location /cours, we are telling NGINX to match any URI starting with "cours". This type of matching is called a prefix match.
+
+To perform an exact match, we will need to update the code as follows:
+
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        location = /cours {
+            return 200 "Nginx. \nAdministration Linux.\n";
+        }
+    }
+}
+Adding a = sign before the URI will instruct NGINX to respond only if the URL matches exactly. Now, if we send a request to anything other than /cours, we will receive a 404 response.
+
+curl -I http://nginxserver.cours-datascientest.cloudns.ph/cours-test
+Output display:
+
+HTTP/1.1 404 Not Found
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 15:17:11 GMT
+Content-Type: text/html
+Content-Length: 162
+Connection: keep-alive
+
+But if we send the request to the exact URI, we get a result:
+
+curl -I http://nginxserver.cours-datascientest.cloudns.ph/cours
+Output display:
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 15:21:47 GMT
+Content-Type: text/plain
+Content-Length: 30
+Connection: keep-alive
+
+e.8 - Variables in NGINX
+Variables in NGINX work similarly to those in other programming languages. The set directive can be used to declare new variables anywhere in the configuration file:
+
+set $<variable_name> <variable_value>;
+set name "Fall"
+set entreprise "Datascientest"
+set profession devops
+Variables can be of three types:
+
+String
+
+Integer
+
+Boolean
+
+In addition to the variables that we can declare manually, NGINX also offers a set of built-in variables, provided by its various modules. A complete alphabetical index of variables is available in the official documentation.
+
+To observe some of these variables in action, let's update the configuration as follows:
+
+events {
+}
+http {
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "Host - $host\nURI - $uri\nArguments - $args\n";
+    }
+}
+Then let's reload the configuration:
+
+sudo nginx -s reload # reloads the NGINX configuration
+By consulting the result returned by the server, we obtain:
+
+
+As we can see:
+
+The variable $host contains the hostname (server address).
+The variable $uri corresponds to the URI requested relative to the root.
+The variable $args groups all the query strings passed in the URL.
+e.9 - Redirections and Rewrites
+A redirection in NGINX works the same way as on any other platform.
+
+To illustrate this mechanism, let's update our configuration. Before that, let's create a new file named about.html in the directory /var/www/datascientest_website/, and add the following sentence:
+
+About our site
+
+cd /var/www/datascientest_website/
+touch about.html
+We now have 2 files in our datascientest_website directory:
+
+ls
+Output display:
+
+about.html  index.html
+Let's now modify the NGINX configuration file as follows:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root  /var/www/datascientest_website/;
+        location = /root {
+                return 307 /index.html;
+        }
+        location = /about {
+                return 307 /about.html;
+        }
+    }
+}
+Now, if we send a request to http://nginxserver.cours-datascientest.cloudns.ph/about, we will be redirected to http://nginxserver.cours-datascientest.cloudns.ph/about.html :
+
+curl -I http://nginxserver.cours-datascientest.cloudns.ph/about
+Output display:
+
+HTTP/1.1 307 Temporary Redirect
+Server: nginx/1.18.0 (Ubuntu)
+Date: Wed, 16 Nov 2022 16:08:20 GMT
+Content-Type: text/html
+Content-Length: 180
+Location: http://nginxserver.cours-datascientest.cloudns.ph/about.html
+Connection: keep-alive
+As we can see, the server responded with a status code of 307 and the location indicates http://nginxserver.cours-datascientest.cloudns.ph/about.html. If we visit http://nginxserver.cours-datascientest.cloudns.ph/about from a browser, we will see that the URL will automatically change to http://nginxserver.cours-datascientest.cloudns.ph/about.html.
+
+The rewrite directive, however, works a bit differently. It modifies the URI internally, without informing the user. To see it in action, let's update our configuration as follows:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root  /var/www/datascientest_website/;
+        rewrite /root /index.html;
+        rewrite /about /about.html;
+    }
+}
+Now, if we send a request to http://nginxserver.cours-datascientest.cloudns.ph/about, we will receive a response code 200 and the HTML code of the about.html file in response:
+
+curl -i http://nginxserver.cours-datascientest.cloudns.ph/about
+Output display:
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Thu, 17 Nov 2022 06:27:56 GMT
+Content-Type: text/html
+Content-Length: 23
+Last-Modified: Wed, 16 Nov 2022 16:05:01 GMT
+Connection: keep-alive
+ETag: "63750a2d-17"
+Accept-Ranges: bytes
+
+About our site
+If we visit the corresponding URI in a browser, we will indeed see the page about.html, while the displayed URL remains unchanged:
+
+
+Besides the way URI changes are handled, there is another important difference between a redirect and a rewrite. When a rewrite is performed, the server context is re-evaluated by NGINX. This means that a rewrite is a more costly operation than a simple redirect.
+
+e.10 - Try multiple files
+Another essential concept is the try_files directive. Unlike a standard response that returns a single file, try_files allows for sequentially checking the existence of multiple files before returning a response.
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root  /var/www/datascientest_website/;
+        try_files /logo.jpg /not_found;
+        location /not_found {
+            return 404 "Sorry, we cannot find this file\n";
+        }
+    }
+}
+Here, we have added the try_files directive. With the instruction try_files /logo.jpg /not_found;, we are asking NGINX to check, for each received request:
+
+If a file logo.jpg exists at the root.
+If not, redirect the request to the route /not_found.
+When testing this configuration with a non-existent file like logo.jpg, we receive a 404 response with the message:
+
+Sorry, we cannot find this file.
+
+However, the problem with a try_files directive written this way is that it applies to all requests. In practice, this means that as long as logo.jpg exists on the disk, NGINX will return it, regardless of the URL requested by the user.
+
+And that is why try_files is often used with the NGINX variable $uri.
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root  /var/www/datascientest_website/;
+        try_files $uri /not_found;
+        location /not_found {
+                return 404 "Sorry, we cannot find this file\n";
+        }
+    }
+}
+By writing try_files $uri /not_found;, we are asking NGINX to first try the URI requested by the client. If it does not find that one, it should try the next one.
+
+Now, if we visit [http://nginxserver.cours-datascientest.cloudns.ph/index.html], we will get the old page index.html. The result will be similar for the about.html page.
+
+But if we request a file that does not exist, we will receive the response from the location /not_found :
+
+curl -i http://nginxserver.cours-datascientest.cloudns.ph/nothing
+Output display:
+
+HTTP/1.1 404 Not Found
+Server: nginx/1.18.0 (Ubuntu)
+Date: Thu, 17 Nov 2022 06:44:46 GMT
+Content-Type: text/plain
+Content-Length: 43
+Connection: keep-alive
+
+Sorry, we cannot find this file
+One thing we may have already noticed is that if we visit the root of the server http://nginxserver.cours-datascientest.cloudns.ph, we get a 404 response.
+
+Indeed, when we access the root of the server, the variable $uri does not match any existing file, so NGINX serves us the fallback location. If we want to resolve this issue, let's update our configuration as follows:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        root  /var/www/datascientest_website/;
+        try_files $uri $uri/ /not_found;
+        location /not_found {
+                return 404 "Sorry, we cannot find this file\n";
+        }
+    }
+}
+By writing try_files $uri $uri/ /not_found;, we are asking NGINX to first try the requested URI. If that doesn't work, try the requested URI as a directory, and each time NGINX finds itself in a directory, it automatically starts looking for an index.html file.
+
+Now, if we visit the server, we will get the content of the file index.html.
+
+e.11 - Logs NGINX
+By default, NGINX log files are located in /var/log/nginx. If we list the contents of this directory, we can see something like this:
+
+ls -larth /var/log/nginx
+Output display:
+
+总计 48K
+drwxr-xr-x  2 root     adm    4.0K Nov 16 09:59 .
+drwxrwxr-x 11 root     syslog 4.0K Nov 17 00:00 ..
+-rw-r-----  1 www-data adm    8.7K Nov 17 06:36 error.log
+-rw-r-----  1 www-data adm     22K Nov 17 06:45 access.log
+Let's start by emptying the two files:
+
+# deletion of the 2 files present by default
+sudo rm /var/log/nginx/access.log /var/log/nginx/error.log
+
+# creation of new files with the same names
+sudo touch /var/log/nginx/access.log /var/log/nginx/error.log
+
+# reopening log files
+sudo nginx -s reopen
+If we do not send a reopen signal to NGINX, it will continue to write logs to the previously opened streams and the new files will remain empty.
+
+Now, to make an entry in the access log, let's send a request to the server.
+
+curl -I http://nginxserver.cours-datascientest.cloudns.ph
+Output display:
+
+HTTP/1.1 200 OK
+Server: nginx/1.18.0 (Ubuntu)
+Date: Thu, 17 Nov 2022 06:55:43 GMT
+Content-Type: text/html
+Content-Length: 29
+Last-Modified: Wed, 16 Nov 2022 11:41:57 GMT
+Connection: keep-alive
+ETag: "6374cc85-1d"
+Accept-Ranges: bytes
+Let's now display the contents of the logs.
+
+sudo cat /var/log/nginx/access.log
+Output display:
+
+3.8.49.199 - - [17/Nov/2022:06:53:50 +0000] "HEAD / HTTP/1.1" 404 0 "-" "curl/7.68.0"
+As we can see, a new entry has been added to the access.log file. Any request to the server will be logged in this file by default. But we can change this behavior using the access_log directive.
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        location / {
+            return 200 "this will be logged in the default file.\n";
+        }
+        location = /admin {
+            access_log /var/log/nginx/admin.log;
+            return 200 "this will be logged in a separate file.\n";
+        }
+        location = /no_logging {
+            access_log off;
+            return 200 "this will not be logged.\n";
+        }
+    }
+}
+The first access_log directive inside the /admin location block instructs NGINX to write all access logs for this URI to the file /var/logs/nginx/admin.log. The second one inside the /no_logging location completely disables access logging for this location.
+
+Let's validate and reload the NGINX configuration. Now, if we send requests to these locations and inspect the log files, we should have these results:
+
+curl http://nginxserver.cours-datascientest.cloudns.ph/no_logging
+Output display:
+
+this will not be recorded.
+sudo cat /var/log/nginx/access.log
+The file /var/log/nginx/access.log will be empty.
+
+curl http://nginxserver.cours-datascientest.cloudns.ph/admin
+Output display:
+
+this will not be recorded.
+sudo cat /var/log/nginx/access.log
+The file /var/log/nginx/access.log will be empty.
+
+sudo cat /var/log/nginx/admin.log
+Output display:
+
+3.8.49.199 - - [17/Nov/2022:09:19:01 +0000] "GET /admin HTTP/1.1" 200 46 "-" "curl/7.68.0"
+curl  http://nginxserver.cours-datascientest.cloudns.ph/
+Output display:
+
+this will be recorded in the default file.
+sudo cat /var/log/nginx/access.log
+Output display:
+
+3.8.49.199 - - [17/Nov/2022:09:17:39 +0000] "GET / HTTP/1.1" 200 51 "-" "curl/7.68.0"
+The file error.log, on the other hand, contains the failure logs. To make an entry in error.log, we need to crash NGINX. To do this, let's update our configuration as follows:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        return 200 "..." "...";
+    }
+}
+As we know, the return directive only takes two parameters, but we have provided three here. Let's try to reload the configuration and an error message will be displayed:
+
+sudo nginx -s reload
+Output display:
+
+# nginx: [emerg] invalid number of arguments in "return" directive in /etc/nginx/nginx.conf:14
+Let's check the error log content and the message should also be there:
+
+sudo cat /var/log/nginx/error.log
+
+# 2022/11/17 08:35:45 [notice] 4169#4169: signal process started
+# 2022/11/17 10:03:18 [emerg] 8434#8434: invalid number of arguments in "return" directive in /etc/nginx/nginx.conf:14
+Error messages in NGINX are classified by levels. An entry of type notice in the error log is generally harmless, while an emerg (or emergency) entry must be addressed immediately.
+
+There are eight levels of error messages:
+
+debug : Useful debugging information to precisely identify the source of a problem.
+info : Purely informational messages, not essential but useful to know.
+notice : Normal event worth noting.
+warn : An unexpected behavior occurred, without critical impact.
+error : An error was encountered that prevented part of the system from functioning properly.
+crit : Critical issue requiring quick resolution.
+alert : Immediate action required.
+emerg : Emergency state, the system is unusable and requires immediate intervention.
+By default, NGINX logs all message levels. This behavior can be modified using the error_log directive. For example, if we want to set the minimum logging level to warn, we can update our configuration file as follows:
+
+events {
+}
+http {
+    include /etc/nginx/mime.types;
+    server {
+        listen 80;
+        server_name nginxserver.cours-datascientest.cloudns.ph;
+        error_log /var/log/nginx/error.log warn;
+        return 200 "...";
+    }
+}
+Then, let's validate and reload the configuration. From now on, only messages of level warn and above will be logged in the error log.
+
+cat /var/log/nginx/error.log
+Example of output:
+
+# 2022/11/17 11:27:02 [emerg] 12769#12769: invalid number of arguments in "return" directive in /etc/nginx/nginx.conf:16
+Unlike the default configuration, no notice entries are displayed. Here, the emerg message is logged because it is of a higher level than warn.
+
+👉 For most projects, it is recommended to leave the default configuration, but a good practice is to set the minimum level to warn, in order to avoid overly verbose entries in the error log.
+
+  To learn more about customizing logging in NGINX, check the official documentation.
+
+Practical case
+In this practical case, we will deploy a virtual host hosting a site under WordPress, with SSL/TLS certificates to secure access. We will explain progressively, throughout this deployment, the different elements used.
+
+F - Pile LEMP
+
+f.1 - Introduction
+A software stack (or stack) generally consists of:
+
+of an operating system,
+of a web server,
+of a database,
+and of a server-side programming language (as well as sometimes client-side tools).
+It brings together a coherent set of software and frameworks for creating and deploying complete web applications.
+
+The LEMP stack is an open-source web application stack, widely used and supported by a strong community. It is employed in many large-scale web applications. Today, Nginx is the second most used web server in the world, just behind Apache.
+
+f.2 - Components of the LEMP stack
+Each component of the stack plays a well-defined role and communicates with the others:
+
+L (Linux) : The operating system on which the web server is based. Free and open source, it is known for its robustness, security, and resistance to malware compared to Windows or macOS.
+
+E (NGINX) : The web server engine, which can also act as a reverse proxy or load balancer between multiple machines.
+
+M (MySQL or MariaDB): Open source relational database used to store and manipulate data while ensuring its consistency and integrity. It organizes data into tables (rows and columns) and adheres to the ACID model.
+
+P (PHP) : Hypertext Preprocessor, a server-side scripting language that interacts with the database to perform various operations: retrieval, addition, manipulation, or processing of data.
+
+  A variant of the LEMP stack, called LAMP, replaces NGINX with Apache.
+f.3 - Installation
+Before starting this practical case, the LEMP server must be installed on our server:
+
+sudo apt-get install nginx mariadb-server php php-fpm php-curl php-mysql php-gd php-mbstring php-xml php-imagick php-zip php-xmlrpc -y
+Once the LEMP server is installed, check the PHP version using the following command:
+
+php -v
+You will get the PHP version in the following output:
+
+PHP 7.4.3 (cli) (built: Nov  2 2022 09:53:44) ( NTS )
+Copyright (c) The PHP Group
+Zend Engine v3.4.0, Copyright (c) Zend Technologies
+    with Zend OPcache v7.4.3, Copyright (c), by Zend Technologies
+Next, let's modify the PHP configuration file and change some default settings:
+
+sudo nano /etc/php/7.4/fpm/php.ini
+Modify the following lines:
+
+cgi.fix_pathinfo=0
+upload_max_filesize = 128M
+post_max_size = 128M
+memory_limit = 512M
+max_execution_time = 120
+Once this is done, we can save and close the file.
+
+f.4 - Create a database for WordPress
+Situation Setup:
+
+WordPress uses a database to store its content.
+
+Create a wordpress database in MariaDB and a user called wordpress for our site.
+
+Once it's finished, we can move on to the next step.
+
+f.5 - WordPress
+
+WordPress is a free and open-source content management system (CMS), primarily used for publishing blogs and websites.
+
+It significantly simplifies the creation, customization, and maintenance of websites, even for users without advanced programming skills.
+
+Due to its popularity, more than one third of websites in the world are now powered by WordPress.
+
+WordPress is developed in PHP and uses MariaDB and/or MySQL as the database management system.
+
+First, let's access the Nginx web root directory and download the latest version of WordPress using the following command:
+
+cd /var/www/html
+sudo wget https://wordpress.org/latest.tar.gz
+Output display:
+
+--2022-11-17 11:17:02--  https://wordpress.org/latest.tar.gz
+Resolving wordpress.org (wordpress.org)... 198.143.164.252
+Connecting to wordpress.org (wordpress.org)|198.143.164.252|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 22751086 (22M) [application/octet-stream]
+Saving to: ‘latest.tar.gz'
+
+latest.tar.gz                               100%[===========================================================================================>]  21.70M  11.5MB/s    in 1.9s
+
+2022-11-17 11:17:04 (11.5 MB/s) - ‘latest.tar.gz' saved [22751086/22751086]
+Once WordPress is downloaded, let's extract the downloaded file using the following command:
+
+sudo tar -zxvf latest.tar.gz
+Next, we will rename the example WordPress configuration file.
+
+sudo mv /var/www/html/wordpress/wp-config-sample.php /var/www/html/wordpress/wp-config.php
+Then, modify the WordPress configuration file and set the parameters for our database:
+
+sudo nano /var/www/html/wordpress/wp-config.php
+Define the parameters of our database as indicated below:
+
+define( 'DB_NAME', 'wordpress' ); # name of the database
+
+/** Database USERNAME */    # username of the user
+define( 'DB_USER', 'wordpress' );
+
+/** Database password */ # user password
+define( 'DB_PASSWORD', 'DatascientestWordpress@' );
+
+/** Database hostname */ # the location of our database which is located on the same server as the website so "localhost"
+define( 'DB_HOST', 'localhost' );
+Save and close the file when you are done. Then, set the appropriate permissions and ownership for the WordPress directory:
+
+sudo chown -R www-data:www-data /var/www/html/wordpress
+sudo chmod -R 755 /var/www/html/wordpress
