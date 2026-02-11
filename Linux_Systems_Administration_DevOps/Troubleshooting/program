@@ -33,3 +33,105 @@ telnet	Can be used to test remote connectivity on ports.
 route	Helps you obtain all the information from the routing table.
 tcpdump	This utility helps you capture network packets and analyze them for network issues.
 lsof	Lists all open files and the process information that opened them.
+C - Outgoing Connections
+Linux offers the ip command as a comprehensive network utility for configuring the network and troubleshooting connectivity issues. It allows you to manage various network objects such as IP addresses, routes, and interfaces.
+
+Before starting, use the ip command to display the active network interfaces:
+
+ip addr show
+If no interface is detected, check if the hardware is disabled. If it is active and properly connected, use the route command to check the gateway:
+
+route
+The default line represents the gateway (router) accessible by the machine via a functional network card. Linux also provides the ping utility to test the connectivity between your device and the router:
+
+ping -c 5 <gateway>
+An error may indicate that the router is not physically connected or that it is turned off. If the ping is successful, then try to reach an address beyond the router, for example, the public DNS server of Google 8.8.8.8:
+
+ping -c 5 8.8.8.8
+A successful ping suggests that the problem is related to hostname resolution to IP addresses. The DNS server used by the system is set manually or automatically via the DHCP server when the network interface starts. Check the details (names and IP addresses) of the DNS servers in the file /etc/resolv.conf :
+
+nameserver 192.168.11.12
+nameserver 192.168.11.253
+It is possible that the DNS server is down or that the wrong address has been assigned. Note the addresses of the DNS servers listed in the resolv.conf file and test their accessibility with a ping:
+
+ping -c 3 192.168.11.253
+You can also use the Domain Information Groper (DIG) tool to check if the DNS server is functioning, that is, if it is capable of resolving a domain name to an IP address:
+
+ dig @115.186.188.3 www.google.com
+Configuring a DNS server can be tricky. If the network manager supports connectivity, it automatically replaces the name server entries in the file /etc/resolv.conf.
+
+To avoid this, access the directory /etc/sysconfig/network-scripts and add the following line in the corresponding ifcfg file:
+
+sudo vim /etc/sysconfig/network-scripts/ifcfg
+PEERDNS=no
+DNS1=<DNS_server_IP_add>
+In the case of a separate network service, also add the directive PEERDNS=no in the configuration file of the relevant interface.
+
+D - Incoming Connections
+For a Linux system configured as an Apache server, the web server must be accessible by clients. If a client cannot reach the server via a browser, you can use the commands ping, dig, or traceroute from an external machine to identify the problem.
+
+The nmap tool allows you to check the availability of the service by inspecting the open ports on the server:
+
+nmap <IP_address>
+If ports 80 and 443 appear as open, it indicates that network connectivity is correct. Otherwise, the firewall may be blocking packets on these ports, or the service is not configured correctly or is not listening on 80/443.
+
+If the system uses ufw with a restrictive default policy, all incoming connections are blocked. Then allow the necessary ports:
+
+sudo ufw allow 80
+sudo ufw allow 443
+If the blockage persists, display the firewall status to check the applied rules:
+
+sudo ufw status
+Then, if necessary, allow a specific host:
+
+sudo ufw allow from <ip_address>
+If access to ports 80/443 is allowed and incoming connections are possible, then check the status of the server:
+
+sudo systemctl status apache2
+Finally, make sure that the service (httpd or apache2) is listening on the appropriate interfaces and ports.
+
+E - Solve Hardware Issues
+When the kernel starts, it loads the necessary hardware drivers and modules, while displaying messages that include details of detection or potential hardware errors. Since these messages scroll too quickly on the screen, they are recorded in the kernel's ring buffer.
+
+At system startup, use the following command to save these messages to a file:
+
+sudo dmesg > /tmp/msg.txt
+less /tmp/msg.txt
+These messages can be accessed later or sent to a third party for analysis.
+
+Another possibility is to check the files /var/log/dmesg or /var/log/messages, when they exist. On Linux systems using systemd, these messages are logged in the centralized journal. Then use the following command:
+
+journalctl -k | less
+Search for any messages indicating hardware component failure or driver not loading.
+
+F - Troubleshoot System Load
+Linux integrates many utilities that allow monitoring the system's activity. In some cases, an application or the system itself may start to slow down. These tools help identify processes that excessively consume memory, disk space, processors, or network bandwidth.
+
+Frequent causes of instability include limited resources (memory, disk space, network capacity, computing power) or poorly configured applications. Linux utilities allow for diagnosing and correcting these issues.
+
+f.1 - Memory Usage
+Execute the command ps aux to list the processes with their details. The output includes, in particular, memory usage, PID, and CPU consumption of each process.
+
+To terminate a process, use the kill command, which sends a signal. The most common are SIGTERM and SIGKILL.
+
+kill -15 PID
+The signal SIGTERM (-15) requests the process to stop, but it may happen that it is not enough to interrupt it. In this case, use SIGKILL (-9) to force its immediate termination:
+
+kill -9 PID
+f.2 - Clear page caches
+To temporarily free up memory, you can delete inactive cache pages. This forces the writing of certain pages in memory to disk, in order to free up resources.
+
+Execute the following command in a second terminal while top is running, to observe the evolution of memory usage:
+
+echo 3 > /proc/sys/vm/drop_caches
+f.3 - Processor Load
+Linux allows adjusting the access priority of processes to the processor using the nice and renice commands.
+
+First, use top to identify the process consuming the most CPU. Note its PID, then assign it a nice value between -20 and 19:
+
+nice +18 PID
+The higher the value, the less priority the process has to access the processor.
+
+You can then dynamically modify this value with renice to adjust the priority of a process that is already running.
+
+renice -n +18 PID
