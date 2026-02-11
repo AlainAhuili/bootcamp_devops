@@ -1,0 +1,35 @@
+VII - Troubleshooting
+
+A - Presentation
+We studied various essential elements of system administration, such as network configuration, storage management, and diagnostics. We will now address the commands related to troubleshooting.
+
+For a developer working with Linux systems, mastering network commands is an additional asset. More specifically, if you want to become a DevOps engineer, it is essential to master troubleshooting commands in Linux, as they will be an integral part of your daily activities.
+
+Although GNU/Linux is known for its stability and robustness, it can happen that some features do not work correctly. The source of the problem may be related to the kernel, the network, the storage, or many other factors.
+
+It is therefore essential to know where to look and what actions to take to obtain relevant information. Problem resolution begins with its identification, the collection of information, the search for the root cause, and then its correction. As with any task, GNU/Linux offers many tools to facilitate troubleshooting.
+
+B - Network Troubleshooting
+Network analysis involves examining statistics and metrics to provide system administrators with information about its current state. Network systems are inherently complex: they consist of multiple elements. Additionally, performance can be affected by issues related to services, software, or firewall rules.
+
+These tools can be very useful for solving network issues we may encounter. However, network management and troubleshooting constitute a crucial set of tasks for any system administrator. Therefore, Linux offers command line tools to address management and connectivity issues.
+
+
+Command	Usage
+hostname	To check and set the server's hostname.
+host	To get the DNS details of the host.
+ping	Checks if the remote server is reachable using the ICMP protocol (https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol). It also indicates the round-trip time of packets.
+curl	A cross-platform utility used to transfer data. It can be used to troubleshoot various network issues.
+wget	Utility for downloading files. Can be used to troubleshoot proxy connections and connectivity.
+ip	A replacement for `ifconfig`. Can be used to configure and retrieve information about network interfaces on systems.
+arp	Utility to display and manage the ARP cache (https://en.wikipedia.org/wiki/ARP_cache).
+netstat	Mainly used to check connections and PID on Unix ports and sockets.
+traceroute	This utility uses the ICMP protocol and finds the hops involved in reaching the destination server. It also shows the time taken between hops.
+mtr	mtr is a mix of `ping` and `traceroute`. It also provides additional information such as intermediate hosts and responsiveness.
+dig	Helps you obtain the DNS records associated with a domain name.
+nslookup	Command similar to dig.
+nc	Utility for debugging TCP/UDP sockets.
+telnet	Can be used to test remote connectivity on ports.
+route	Helps you obtain all the information from the routing table.
+tcpdump	This utility helps you capture network packets and analyze them for network issues.
+lsof	Lists all open files and the process information that opened them.
