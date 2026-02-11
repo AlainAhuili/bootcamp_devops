@@ -1,0 +1,410 @@
+
+VIII - Backup and Restoration
+
+A - Presentation
+Data backup is vital for the survival of an organization. You may fall victim to a cyberattack or ransomware and lose your data, which can then be sold to malicious third parties. Malware can also corrupt your valuable information. Finally, disgruntled employees or other internal threats can delete your digital assets.
+
+Data backup is a practice that combines techniques and solutions to ensure a reliable and effective backup. Data is copied to one or more locations, at predetermined frequencies and according to various strategies. You can set up a backup infrastructure tailored to your organization or use backup solutions as a service (BaaS, for Backup as a Service).
+
+B - Data Backup
+b.1 - Presentation
+Data backup involves copying information from a primary location to a secondary location to protect it in case of disaster, accident, or malicious action. Data is the cornerstone of modern organizations, and its loss can cause significant damage, even paralyzing operations. This is why data backup is essential, regardless of the size of the business.
+
+What do backup data mean?
+
+In general, backup data refers to all the information necessary for the workloads executed by a server. This can include documents, media files, configuration files, system images, operating systems, or even registry files. In summary, all the data you want to keep can be stored as a backup.
+
+Data backup relies on several key concepts:
+
+Backup solutions and tools — while it is possible to back up manually, most organizations use technological solutions to ensure regular and consistent backups.
+Backup administrator — each organization must designate an employee responsible for backups. This person must ensure that the systems are properly configured, test them regularly, and ensure that critical data is well protected.
+Backup scope and planning — a backup policy should define which files and systems are prioritized and how often they should be backed up at what frequency.
+Recovery Point Objective (RPO) — the RPO refers to the amount of data that an organization is willing to lose in the event of a disaster. It depends on the frequency of backups. For example, if a system is backed up once a day, the RPO is 24 hours. The lower the RPO, the more it requires storage, computing, and network resources.
+Recovery Time Objective (RTO) — the RTO refers to the time required to restore data and resume operations. For large volumes or off-site backups, restoration can be lengthy, requiring robust solutions to reduce the RTO.
+To evaluate the effectiveness of a business continuity plan, we measure these two indicators (RPO and RTO) in order to define a SLA (Service Level Agreement). The sum of these two metrics represents the total downtime as well as the acceptable data loss.
+
+
+Example: A failure reveals that server restoration takes 15 minutes (RTO) and that a backup is performed every 24 hours (RPO). The SLA is therefore 24h15.
+
+C - Post-Disaster Recovery
+To understand the importance of a backup strategy integrated into a disaster recovery plan, consider the following statistics:
+
+Cost of Downtime — according to Gartner, the average cost of interruptions for a business is €5,600 per minute.
+Survival Rate — another study by Gartner shows that only 6% of businesses affected by a disaster and without a recovery plan survived more than two years after the event.
+Causes of Data Loss — the most common causes are: hardware or system failures (31%), human errors (29%), and malware or virus attacks (29%).
+The simplest way to protect a server is to use a server backup solution. These solutions allow you to store data on another local server, a cloud server, or in a hybrid environment. The latter approach is becoming increasingly popular as it optimizes resources, facilitates multi-regional duplication, and speeds up restorations.
+
+In general, a server backup solution should offer:
+
+Support for different types of files (documents, media, configuration files, etc.).
+Flexibility of backup locations, whether on-site or off-site.
+Scheduling and automation to ensure regular and consistent backups.
+Backup lifecycle management, including retention duration and export to external systems.
+Selection of partitions to back up/restore independently.
+Lossless compression to optimize storage space.
+Choice of backup type: full, differential, or incremental.
+
+Scalability: solutions must be able to keep up with the growth of data volumes and manage backups of all sizes.
+D - Data Protection on Linux
+Data protection relies on technologies such as data loss prevention (DLP), secure storage, firewalls, encryption, and endpoint security.
+
+We often measure the importance of a backup only after a hardware failure, a natural disaster, or a cyberattack. These events can paralyze a business by causing the loss of vital data (e.g., financial information or customer data). The ability to recover directly depends on the quality and freshness of the last backup.
+
+Server backups provide essential assurance: data can be restored in case of an incident. However, each operating system handles backups differently. Some integrate utilities, while others require specific configurations.
+
+Linux offers more flexibility and options, but requires more knowledge for a successful setup. Regularly backing up a Linux server is therefore an essential task. Besides disaster recovery, it also facilitates data migrations between systems.
+
+Backups must be encrypted and protected by appropriate physical access controls when stored on-site.
+
+Among the many solutions available:
+
+software that automates backups at defined intervals,
+manual backups on external disk, RAID array, or remote server.
+The rsync utility is one of the most practical and reliable tools for backing up a server.
+
+E - What is the Rsync tool?
+
+e.1 - Presentation
+The rsync tool, short for remote sync, is a file synchronization utility that allows for local or remote backups. It compares the source and destination and only transfers the modified parts. It is an efficient incremental backup tool, particularly useful for large volumes.
+
+e.2 - Basic Syntax
+The syntax of rsync is simple and resembles that of the cp or scp (secure copy) commands.
+
+To illustrate its operation, let's first create two distinct directories:
+
+mkdir datascientest1
+mkdir datascientest2
+Next, we will create some text files in the first directory.
+
+touch datascientest1/files{1..5}.txt
+To confirm that the files exist, we will execute the command:
+
+ls -l datascientest1
+ total 0
+ -rw-rw-r-- 1 ubuntu ubuntu 0 Nov 21 12:41 files1.txt
+ -rw-rw-r-- 1 ubuntu ubuntu 0 Nov 21 12:41 files2.txt
+ -rw-rw-r-- 1 ubuntu ubuntu 0 Nov 21 12:41 files3.txt
+ -rw-rw-r-- 1 ubuntu ubuntu 0 Nov 21 12:41 files4.txt
+ -rw-rw-r-- 1 ubuntu ubuntu 0 Nov 21 12:41 files5.txt
+Then, we will synchronize all the files from the datascientest1 directory to datascientest2 as follows.
+
+rsync -r datascientest1/ datascientest2
+We can then check the contents of the directory datascientest2.
+
+ls datascientest2
+Output to display:
+
+ drwxr-xr-x 8 ubuntu ubuntu 4096 Nov 21 12:41 ..
+ -rw-rw-r-- 1 ubuntu ubuntu    0 Nov 21 12:42 file1.txt
+ -rw-rw-r-- 1 ubuntu ubuntu    0 Nov 21 12:42 file2.txt
+ -rw-rw-r-- 1 ubuntu ubuntu    0 Nov 21 12:42 file3.txt
+ -rw-rw-r-- 1 ubuntu ubuntu    0 Nov 21 12:42 file4.txt
+ -rw-rw-r-- 1 ubuntu ubuntu    0 Nov 21 12:42 file5.txt
+We can see that the files created in the datascientest1 directory have been replicated in the datascientest2 directory.
+
+The -r option means recursive: it takes into account all the content of the directory. You can also use the -a option, which not only performs a recursive synchronization but also preserves attributes such as symbolic links, owners, permissions, and timestamps. In most cases, the -a option is therefore preferable to the -r option.
+
+rsync -a datascientest1/ datascientest2
+The -v (verbose) option allows you to display the detailed output of the command:
+
+mkdir datascientest1
+mkdir datascientest2
+touch datascientest1/files6.txt
+rsync -av datascientest1/ datascientest2
+Output display:
+
+sending incremental file list
+./
+files6.txt
+sent 123 bytes received 38 bytes 322.00 bytes/sec total size is 0 speedup is 0.00
+
+Once the command is executed, the output above is displayed, indicating in particular the size of the copied file (in bytes) as well as the acceleration factor.
+
+What is the acceleration factor?
+On its first run, rsync copies all the files since the destination directory is empty. In this case, the speedup factor is 1.0.
+
+During the following executions, rsync only copies files that have been modified since the last backup. This operation can result in a speedup factor of 2.0, 3.0, or even much more (sometimes up to 1000).
+
+e.3 - Rsync Options
+The rsync tool has many options. By simply typing rsync in the terminal, you can view the complete list.
+
+Here is an overview of the most common options:
+
+These include:
+
+
+-r	Allows for recursive data synchronization but does not preserve user and group ownership, permissions, timestamps, or symbolic links.
+-a	The archive mode behaves like the recursive mode but preserves all file permissions, symbolic links, file ownership, etc.
+-z	Used to compress data during transfers to save space.
+-b	Performs a backup when synchronizing data.
+-h	Displays numbers in the output in a human-readable format.
+-n	Performs a dry run. Used for testing before the actual synchronization takes place.
+-e	Tells rsync to use the SSH protocol for remote transfers.
+-progress	Displays the progress of the transfer during synchronization.
+-v	Verbose output. Displays details of the transfer.
+-q	Used to suppress the output of the command and rsync options.
+You can use rsync to copy only a specific type of file. To do this, use the asterisk (*) instead of the file name and add the extension. For example, to copy only .txt files, enter:
+
+rsync -v datascientest1/*.txt datascientest2/
+This rsync command transfers all files with the .txt extension from the datascientest1 directory to the datascientest2 directory.
+
+When you synchronize two directories, rsync does not copy a file that is already present in the destination and has not been modified in the source. However, it may happen that you have modified a file in the destination and you do not want rsync to overwrite it. To avoid this, use the -u option:
+
+rsync -avu datascientest1/ datascientest2/
+e.4 - Difference between source files and destination
+When you start transferring data, you can use the -i option with rsync to check for differences between the source and the destination:
+
+rsync -avi -avu datascientest1/ datascientest2/
+Output display:
+
+sending incremental file list
+delta-transmission disabled for local transfer or --whole-file
+.d          ./
+.f          files1
+total: matches=0  hash_hits=0  false_alarms=0 data=0
+sent 87 bytes received 89 bytes 352.00 bytes/sec total size is 0 speedup is 0.00
+
+Copying files remotely
+So far, we have copied files locally between directories. But rsync also allows for remote copying: this is actually the meaning of its name (Remote Sync). You can transfer files, directories, and subdirectories to another machine via SSH.
+
+  Make sure that OpenSSH is installed and enabled: copying files and directories remotely with `rsync` does not work without SSH.
+Example of command :
+
+rsync -av sourcedirectory/ user@IP_address:/destinationdirectory/
+e.5 - Delete source files after transfer
+In some cases, you may want to delete the source files once the transfer is complete, for example when moving a weekly backup to a new server. To do this, use the --remove-source-files option:
+
+rsync -av -e ssh --remove-source-files sourcedirectory/ user@IP_address:/destinationdirectory/
+e.6 - Simulation with rsync
+rsync is a powerful tool: it can copy but also delete files. To avoid any errors, it is advisable to first perform a simulation. The --dry-run option allows you to check the expected behavior without actually executing the actions.
+
+Example :
+
+rsync -av -e ssh --dry-run sourcedirectory/ user@IP_address:/destinationdirectory/
+The output is identical to that of a real synchronization, but without data transfer. To confirm that this is indeed a test, the terminal displays DRY RUN in the output.
+
+e.7 - Maximum and Minimum Transfer Size
+You can limit the size of transferred files with rsync using the --max-size and --min-size options. These parameters allow you to define a size range.
+
+Example :
+
+rsync -av -e ssh --dry-run --min-size=10k --max-size=1G sourcedirectory/ user@IP_address:/destinationdirectory/
+
+F - CRON Tasks
+
+f.1 - Presentation
+CRON allows you to automatically execute tasks and scripts at specific intervals. It is a service (the crond daemon) available on all Unix-like systems and GNU/Linux distributions. We will use it to automate backups.
+
+f.2 - Installation of cron
+Cron is probably already installed on your system. If not, you can install it as follows:
+
+sudo apt install cron -y
+Then activate it at startup with:
+
+systemctl enable --now cron
+f.3 - Simple CRON Configuration
+The simplest way to schedule a regular task is to place your script in one of the following directories:
+
+/etc/cron.hourly
+/etc/cron.daily
+/etc/cron.weekly
+/etc/cron.monthly
+The execution frequency corresponds to the name of the folder. Be sure to grant execution rights to the scripts and do not include dots in their names.
+
+The CRON logs are located in /var/log/syslog, alongside those of other applications. To view only the CRON logs, use:
+
+grep CRON /var/log/syslog
+Output display:
+
+Dec  2 00:17:01 ip-172-31-25-195 CRON[107529]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 00:47:01 ip-172-31-25-195 CRON[107632]: (root) CMD (   test -x /etc/cron.daily/popularity-contest && /etc/cron.daily/popularity-contest --crond)
+Dec  2 01:17:01 ip-172-31-25-195 CRON[107737]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 02:17:01 ip-172-31-25-195 CRON[107813]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 03:10:01 ip-172-31-25-195 CRON[107876]: (root) CMD (test -e /run/systemd/system || SERVICE_MODE=1 /sbin/e2scrub_all -A -r)
+Dec  2 03:17:01 ip-172-31-25-195 CRON[107890]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 04:17:01 ip-172-31-25-195 CRON[107962]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 05:17:01 ip-172-31-25-195 CRON[108092]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 06:17:01 ip-172-31-25-195 CRON[108177]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+Dec  2 06:25:01 ip-172-31-25-195 CRON[108190]: (root) CMD (test -x /usr/sbin/anacron || ( cd / && run-parts --report /etc/cron.daily ))
+Dec  2 07:17:01 ip-172-31-25-195 CRON[110088]: (root) CMD (   cd / && run-parts --report /etc/cron.hourly)
+To configure CRON tasks, run:
+
+crontab -e
+On first launch, you will be prompted to select your preferred text editor. Once chosen, you will see an explanation of the settings for defining CRON tasks, and you will be able to enter your own inputs.
+
+A CRON entry consists of several fields, separated by spaces:
+
+Minute : from 0 to 59
+Hour : from 0 to 23
+Day of the month : from 1 to 31
+Month : from 1 to 12
+Day of the week : from 0 to 6 (Sunday = 0 or 7)
+Command/script : the command or script to execute
+You can also use the asterisk * to represent "all values".
+
+Examples :
+
+15 22 * * * /var/script.sh
+➡️ Execute /var/script.sh on weekdays at 10:15 PM. The hyphen - allows you to specify a range of values:
+
+10 20 * * 1-5 /var/script.sh
+➡️ Execute the script only on weekdays (Monday to Friday, at 8:10 PM). The comma , allows you to specify multiple values:
+
+10 10,20 * * 1-5 /var/script.sh
+➡️ Execute the script at 10:10 AM and 8:10 PM, on weekdays. The slash / allows you to specify an interval:
+
+<i>/35</i> * * * /var/script.sh
+➡️ Execute the script every 35 minutes.
+
+There are also special expressions:
+
+@reboot : at every reboot
+@yearly or @annually : once a year
+@monthly : once a month
+@weekly : once a week
+@daily or @midnight : once a day
+@hourly : once an hour
+Example :
+
+@midnight /var/script.sh
+➡️ Execute the script at midnight every day.
+
+To see the configured CRON tasks:
+
+crontab -l
+Possible output:
+
+no crontab for ubuntu
+Automate a backup with rsync
+Let's create a script rsync_backup.sh :
+
+mkdir rsync_backup.sh
+Content of the script:
+
+#!/bin/bash
+rsync -av -e ssh --progress --delete datascientest1/ datascientest2/
+Make it executable:
+
+chmod +x rsync_backup.sh
+Then, let's schedule its execution in CRON:
+
+sudo crontab -e
+Add the following line to run the backup every day at 11:30 PM, you can use the crontab generator to help you make writing your CRON easier:
+
+30 23 * * * bash /home/ubuntu/rsync_backup.sh
+⚠️ In practice, backups are often made to an external server. Keeping them on the same host does not provide real resilience: in the event of a failure or loss of the server, local backups would also be lost.
+
+G - TAR for Backup and Restoration
+
+g.1 - Presentation
+The tar command is used to archive and compress files or directories in Linux. It creates a .tar archive, which can then be compressed with various algorithms (gzip, bzip2, etc.). It also allows you to display the contents of an archive, add files to it, or check its integrity.
+
+System administrators frequently use tar to create and restore backups.
+
+g.2 - Syntax
+ tar [options] [archive_name] [files_or_directories]
+Common options:
+
+-c : create an archive
+-x : extract an archive
+-t : list the contents of the archive
+-r : add files to an existing archive
+-W : verify an archive
+-z : compress with gzip
+-j : compress with bzip2
+-v : verbose mode (details displayed)
+-f : specify the name of the archive
+g.3 - Create a tar archive
+Create an archive from a file:
+
+tar -cf backup_datascientest.tar datascientest.txt
+From several files:
+
+tar -cf backup_datascientest.tar files.csv files.docx files.xml
+From a directory :
+
+tar -cfv datascientest1_backup.tar datascientest1
+Output :
+
+datascientest1_backup.tar
+You can also compress a tar file using the bz2 algorithm.
+
+Create a compressed archive in bzip2 :
+
+tar -cjf datascientest1.tar.bz2 datascientest1
+g.4 - Create a Tar Gzip Archive
+You can use the -z option with the tar command to create a tar archive in gzip format ( gzip, which stands for GNU zip, is based on the open-source Deflate algorithm, which is a combination of the Lempel-Ziv 77 data compression method and Huffman coding ).
+
+The following command will create a tar.gz archive from datascientest1.
+
+# This command creates a compressed archive of the 'datascientest1' directory.
+tar -czf datascientest1_backup.tar.gz datascientest1
+g.5 - List the contents of the tar archive
+You can use the -t option with the tar command to display a list of the contents available in the tar archive file.
+
+The following example will display a list of contents in the file backup_datascientest.tar:
+
+tar -tvf datascientest1_backup.tar
+Example of output:
+
+drwxrwxr-x ubuntu/ubuntu     0 2022-12-02 04:53 datascientest1/
+-rw-rw-r-- ubuntu/ubuntu     0 2022-12-02 04:53 datascientest1/files1
+g.6 - Extract a Tar Archive
+Extraire entièrement :
+
+tar -xvf backup_datascientest.tar
+Extract a specific file:
+
+tar -xvf backup_datascientest.tar files.txt
+g.7 - Extract a Tar Gzip archive
+You can use the -z option with the tar command to extract or decompress the Gzip archive file.
+
+For example:
+
+untar -xzvf backup_datascientest.tar.gz
+g.8 - Extract to a different directory
+By default, tar extracts to the current directory. With -C, you can specify a destination:
+
+# Extract the contents of the backup_datascientest.tar file to the specified directory
+
+# Command:
+tar -xvf backup_datascientest.tar -C /home/ubuntu/datascientest_backup
+g.9 - Add or remove files in a Tar archive
+It is possible to add or remove specific files in an existing archive.
+
+Use the -r option to add a file.
+Use the --delete option to remove a file.
+Add a file files.txt to the archive backup_datascientest.tar:
+
+ tar -rvf backup_datascientest.tar files.txt
+Remove a file files.txt from the archive backup_datascientest.tar:
+
+ tar --delete -f backup_datascientest.tar files.txt
+g.10 - Extract multiple files from a Tar archive
+You can use wildcards to extract a set of files.
+
+Example: extract all files with the .html extension from the archive backup_datascientest.tar.gz:
+
+# Extracting all HTML files from the backup archive
+# The command below will decompress the specified tar.gz file and filter for files ending with .html
+
+tar -xvzf backup_datascientest.tar.gz --wildcards '*.html'
+H - Restoration
+Restoration involves putting back lost data or resources from a backup. Most recovery solutions provide a simple interface that allows users to locate the desired information and restore it in just a few clicks.
+
+A volume restoration allows for the recovery of large quantities of files and directories in order to quickly restore a system to operational status after data loss.
+
+In case of an incident, the files can be restored from the backup servers. These backups must be performed:
+
+at regular intervals,
+automatically,
+using tools like rsync, cron, and tar.
+
+When setting up a backup strategy, be sure to include:
+
+the databases,
+the user directories,
+the configuration directories such as /etc and /opt,
+the web didrectories like /var.
+
+Don't forget to also back up the additional disks or volumes, which often contain your backups themselves. It is therefore essential to regularly create a tar archive of the current state of your data and to repeat this process at scheduled intervals to ensure the resilience of your infrastructure.
