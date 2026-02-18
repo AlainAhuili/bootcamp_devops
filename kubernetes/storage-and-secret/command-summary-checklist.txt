@@ -1,0 +1,49 @@
+📁 Storage & Volumes (PV / PVC)
+
+    kubectl apply -f pv.yml: Create the physical storage element (Persistent Volume).
+
+    kubectl get pv: Check the status of the volume (look for Available).
+
+    kubectl apply -f pvc.yml: Submit a request for storage (Persistent Volume Claim).
+
+    kubectl get pvc: Check if your claim is Bound to a volume.
+
+🔑 Secrets (Sensitive Data)
+
+    echo -n 'text' | base64: Manually encode a string for a YAML Secret.
+
+    kubectl apply -f secret.yml: Create a secret from a manifest.
+
+    kubectl create secret generic [name] --from-literal=KEY=VALUE: Create a secret directly (auto-encodes to base64).
+
+    kubectl describe secret [name]: See metadata and size of data (hides the actual value).
+
+    kubectl get secret [name] -o jsonpath='{.data.key}' | base64 --decode: Decode and view the actual password.
+
+⚙️ ConfigMaps (Non-sensitive Config)
+
+    kubectl create configmap [name] --from-file=[file.conf]: Create a map from an existing local file.
+
+    kubectl describe cm [name]: View the contents of the configuration.
+
+    kubectl edit cm [name]: Live-edit the configuration (changes apply immediately to the cluster).
+
+    kubectl get cm [name] -o yaml: View the full YAML representation.
+
+🚀 Management & Debugging
+
+    kubectl apply -f statefulset.yml: Deploy a stateful application (like MariaDB).
+
+    kubectl get pods: Monitor the status (look for Running vs CrashLoopBackOff).
+
+    kubectl exec -it [pod-name] -- bin/bash: Open an interactive terminal inside a container.
+
+    kubectl logs [pod-name]: View application logs to see why a health check might be failing.
+
+    kubectl describe pod [pod-name]: Essential for Health Checks—scroll to the bottom to see Events (e.g., "Liveness probe failed").
+
+🩺 Health Checks (Probes)
+
+    kubectl edit deploy [name]: Use this to manually break a probe (change a port or path) to test Kubernetes' self-healing.
+
+    kubectl get deploy -w: Watch the deployment status in real-time as it updates.
