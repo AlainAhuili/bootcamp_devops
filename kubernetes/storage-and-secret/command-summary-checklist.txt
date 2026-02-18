@@ -1,49 +1,58 @@
-📁 Storage & Volumes (PV / PVC)
+Congratulations on validating the lesson! Here is your high-level command summary checklist, categorized by the specific "checks" and actions you performed across Storage, Secrets, ConfigMaps, and Probes.
 
-    kubectl apply -f pv.yml: Create the physical storage element (Persistent Volume).
+---
 
-    kubectl get pv: Check the status of the volume (look for Available).
+### 📦 1. Storage & Persistence (PV/PVC)
 
-    kubectl apply -f pvc.yml: Submit a request for storage (Persistent Volume Claim).
+| Action | Command | What to Check |
+| --- | --- | --- |
+| **Apply Storage** | `kubectl apply -f pv.yml` | Ensure no syntax errors in YAML. |
+| **Check Volume** | `kubectl get pv` | Status should be **Available**. |
+| **Check Claim** | `kubectl get pvc` | Status should be **Bound**. |
+| **Verify Persistence** | `kubectl delete Pod [name]` | After recreation, data in `mountPath` should remain. |
 
-    kubectl get pvc: Check if your claim is Bound to a volume.
+---
 
-🔑 Secrets (Sensitive Data)
+### 🔐 2. Sensitive Data & Config (Secrets/ConfigMaps)
 
-    echo -n 'text' | base64: Manually encode a string for a YAML Secret.
+| Action | Command | What to Check |
+| --- | --- | --- |
+| **Manual Encode** | `echo -n 'text' | base64` |
+| **Inspect Secret** | `kubectl describe secret [name]` | Verify data keys exist (values stay hidden). |
+| **Decode Secret** | `kubectl get secret [name] -o jsonpath='{.data.password}' | base64 --decode` |
+| **Inspect Config** | `kubectl describe cm [name]` | Ensure the configuration file content is correct. |
+| **Update Config** | `kubectl edit cm [name]` | Changes apply immediately to the cluster logic. |
 
-    kubectl apply -f secret.yml: Create a secret from a manifest.
+---
 
-    kubectl create secret generic [name] --from-literal=KEY=VALUE: Create a secret directly (auto-encodes to base64).
+### 🛠️ 3. Stateful Operations (MariaDB Instance)
 
-    kubectl describe secret [name]: See metadata and size of data (hides the actual value).
+| Action | Command | What to Check |
+| --- | --- | --- |
+| **Environment Check** | `kubectl exec -it [pod] env | grep MYSQL` |
+| **File Injection** | `kubectl exec -it [pod] ls /etc/mysql/conf.d` | Confirm ConfigMap mounted as a file. |
+| **Database Access** | `mysql -u root -p${VAR}` | Tests if the Secret-based password actually works. |
+| **Variable Check** | `SHOW VARIABLES LIKE '...';` | Confirms the ConfigMap actually changed DB behavior. |
 
-    kubectl get secret [name] -o jsonpath='{.data.key}' | base64 --decode: Decode and view the actual password.
+---
 
-⚙️ ConfigMaps (Non-sensitive Config)
+### 🩺 4. Health & Stability (Probes)
 
-    kubectl create configmap [name] --from-file=[file.conf]: Create a map from an existing local file.
+| Action | Command | What to Check |
+| --- | --- | --- |
+| **Monitor Rollout** | `kubectl get deploy,rs,pods` | Look for the **Ready** column (e.g., `11/12`). |
+| **Liveness Failure** | `kubectl describe pod [name]` | Look for `Killing container... failed liveness probe`. |
+| **Readiness Failure** | `kubectl get pods` | Status will be `Running` but **Ready** will be `0/1`. |
+| **Event Log** | `kubectl get events --sort-by=.metadata.creationTimestamp` | Diagnostic timeline of why probes are failing. |
 
-    kubectl describe cm [name]: View the contents of the configuration.
+---
 
-    kubectl edit cm [name]: Live-edit the configuration (changes apply immediately to the cluster).
+### 💡 Final Pro-Tip: The "Describe" Hierarchy
 
-    kubectl get cm [name] -o yaml: View the full YAML representation.
+When things go wrong in these exercises, always follow this order:
 
-🚀 Management & Debugging
+1. `kubectl get pods` (Is it running?)
+2. `kubectl describe pod` (Is it a probe failure or a mounting error?)
+3. `kubectl logs` (Is the application crashing internally?)
 
-    kubectl apply -f statefulset.yml: Deploy a stateful application (like MariaDB).
-
-    kubectl get pods: Monitor the status (look for Running vs CrashLoopBackOff).
-
-    kubectl exec -it [pod-name] -- bin/bash: Open an interactive terminal inside a container.
-
-    kubectl logs [pod-name]: View application logs to see why a health check might be failing.
-
-    kubectl describe pod [pod-name]: Essential for Health Checks—scroll to the bottom to see Events (e.g., "Liveness probe failed").
-
-🩺 Health Checks (Probes)
-
-    kubectl edit deploy [name]: Use this to manually break a probe (change a port or path) to test Kubernetes' self-healing.
-
-    kubectl get deploy -w: Watch the deployment status in real-time as it updates.
+**Would you like me to create a "Troubleshooting Guide" based on the common errors you saw during the Liveness and Readiness probe exercises?**
