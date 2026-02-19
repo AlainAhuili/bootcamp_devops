@@ -1,0 +1,67 @@
+1. Local Testing (Section A)
+
+Run the API locally before containerizing it.
+Bash
+
+# Install dependencies
+pip install uvicorn fastapi pydantic
+
+# Run the server (assumes file is named main.py)
+uvicorn main:server --reload
+
+2. Deployment & Pods (Section C)
+
+Create and verify the initial deployment.
+Bash
+
+# Create the deployment from the YAML file
+kubectl create -f my-api.yml
+
+# Check if the pods are running (should see 3/3 ready)
+kubectl get deployment
+kubectl get pods
+
+3. Networking: Services & Ingress (Section D)
+
+Expose the application to the outside world.
+Bash
+
+# Create the service (alternatively use the YAML file)
+kubectl expose deploy my-sentiment-analysis-deployment --type=ClusterIP --port=8001 --target-port=8000 --name my-sentiment-analysis-service
+
+# Create the Ingress
+kubectl create -f my-ingress.yml
+
+# Get the internal IP address for the Ingress
+kubectl get ingress
+
+# Setup the SSH tunnel (Replace the IP with your results from 'get ingress')
+ssh -i "key.pem" ubuntu@<SERVER_IP> -fNL 8000:<INGRESS_INTERNAL_IP>:80
+
+4. Configuration: ConfigMaps & Secrets (Sections E & F)
+
+Manage environment variables and sensitive data.
+Bash
+
+# Create a ConfigMap from the command line
+kubectl create configmap my-config-map --from-literal ENVIRONMENT_TYPE=production
+
+# Create a Secret
+kubectl create secret generic my-secret --from-literal my-key=my-value
+
+# Delete old deployment to apply new YAML changes
+kubectl delete deployment my-sentiment-analysis-deployment
+kubectl create -f my-api2.yml
+
+# Restart pods to pick up ConfigMap changes without downtime
+kubectl rollout restart deployment my-sentiment-analysis-deployment
+
+5. Debugging & Verification
+
+If something goes wrong, use these to see what the cluster "thinks" is happening.
+| Goal | Command |
+| :--- | :--- |
+| Check Logs | kubectl logs <pod-name> |
+| Describe Resource | kubectl describe pod <pod-name> |
+| Test Endpoint | curl http://localhost:8000/status |
+| Verify Env Vars | kubectl exec <pod-name> -- printenv |

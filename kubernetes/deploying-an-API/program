@@ -1,0 +1,274 @@
+
+4. Deploying an API with Kubernetes
+4. Deploying an API with Kubernetes
+In this section, we'll look at how to deploy a very simple API.
+
+a. The API
+The API we're going to use is coded with the [FastAPI] library (https://fastapi.tiangolo.com/). It simulates the behavior of a sentiment analysis algorithm.
+
+The code for this API is as follows:
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+import random
+bone import
+
+server = FastAPI(title='My API')
+
+
+@server.get('/status')
+async def get_status():
+    """Returns 1 if the API is up
+    """
+    return {
+        status: 1
+    }
+
+
+@server.get('/environment')
+async def get_environment():
+    """
+    If the environment variable ENVIRONMENT_TYPE is set, returns it
+    """
+    environment_type = os.environ.get('ENVIRONMENT_TYPE')
+    if environment_type:
+        return {
+            environment': environment_type
+        }
+    else:
+        return {
+            environment': 'unknown
+        }
+
+
+class Sentence(BaseModel):
+    sentence: str = 'hello world
+    language: str = 'en
+
+
+class PredictedSentence(Sentence):
+    score: float = 0.
+
+
+@server.post('/predict', response_model=PredictedSentence)
+async def post_sentence(sentence: Sentence):
+    """Returns the sentiment of the sentence
+    """
+    return PredictedSentence(
+        sentence=sentence.sentence,
+        language=sentence.language,
+        score=random.uniform(0, 1)
+    )
+
+There are 3 termination points:
+
+GET /status: returns 1 if the API is running
+GET /environment: returns environment variable ENVIRONMENT_TYPE if defined
+POST /predict: returns the sentence's sentiment prediction
+If you wish to test this API, you can install the uvicorn and fastapi Python libraries. Once you've pasted the above lines into a main.py file, you can run the following command:
+
+uvicorn main:server
+The API is then available at the machine's http://localhost:8000 address (documentation at the /docs endpoint).
+
+Here, the API returns a random number rather than a prediction based on the content of the sentence.
+b. The Docker image
+The application is deployed inside a Docker container. The image is available on Docker Hub with the name datascientest/fake-api:1.0.0. The Dockerfile corresponding to this image is given below:
+
+FROM alpine:latest
+
+RUN apk add --update py-pip && pip install uvicorn fastapi
+
+COPY main.py .
+
+EXPOSE 8000
+
+CMD uvicorn main:server --host 0.0.0.0
+c. Pod deployment
+We can now create a yml file to deploy pods.
+
+Paste the following lines into a my-api.yml file
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-sentiment-analysis-deployment
+  labels:
+    app: my-sentiment-analysis-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-sentiment-analysis-api
+  template:
+    metadata:
+      labels:
+        app: my-sentiment-analysis-api
+    spec:
+      containers:
+      - name: my-sentiment-analysis-api
+        image: datascientest/fake-api:1.0.0
+        ports:
+        - containerPort: 8000
+Note that we must specify the ports we wish to expose in these containers, in this case port 8000.
+
+Create this service using the command line interface kubectl.
+
+kubectl create -f my-api.yml
+Check that deployment has taken place using kubectl.
+
+kubectl get deployment
+NAME READY UP-TO-DATE AVAILABLE AGE
+my-sentiment-analysis-deployment 3/3 3 3 48s
+d. API exposure
+Our three replicas are up and running, but now we need to make it available. To do this, we can create a Service of type ClusterIP. To deploy such a Service, we can use the following configuration file.
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-sentiment-analysis-service
+  labels:
+    app: my-sentiment-analysis-api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8001
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: my-sentiment-analysis-api
+Note that here, we choose not to use the same port to show how redirections are made. Alternatively, you can use the following command:
+
+kubectl expose deploy my-sentiment-analysis-deployment\
+ --type=ClusterIP
+ --port=8001 \
+ --target-port=8000 \
+ --name my-sentiment-analysis-service
+Using an yml file with the preceding lines, create the service.
+
+The API is available inside the cluster, but we now need to create an Ingress to expose the Service outside the cluster.
+
+Paste the following lines into a my-ingress.yml file, then create this Ingress.
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-sentiment-analysis-ingress
+spec:
+  defaultBackend:
+    service:
+      name: my-sentiment-analysis-service
+      port:
+        number: 8001
+kubectl create -f my-ingress.yml
+Here we can see that the containers inside the Pods expose port 8000. The Pod port is then returned to port 8001, corresponding to the Service IP. Finally, ingress is used to abstract the port in question.
+
+After a few moments, run the following command
+
+kubectl get ingress
+This command returns the Ingress IP address.
+
+Use curl to query the /status endpoint at the address given by the previous command.
+
+However, the API is not accessible from the web browser. The address used by Ingress is local, so you have to go through an ssh tunnel to access it from the web browser. For example, the previous command gives the following result:
+
+ubuntu@ip-172-31-45-240:~$ kubectl get ingress
+NAME CLASS HOSTS ADDRESS PORTS AGE
+my-sentiment-analysis-ingress nginx * 192.168.49.2 80 17m
+The API is deployed on address 192.168.49.2:80. With the instruction below, we set up the ssh tunnel between the API and port 8000 on our home machine.
+
+ssh -i "data_enginering_machine.pem" ubuntu@3.251.80.227 -fNL 8000:192.168.49.2:80
+Now in your browser, go to localhost:8000/docs to try out the different endpoints directly with OpenAPI.
+
+
+e. Adding a ConfigMap
+The ConfigMap allows configuration data to be passed to Pods. The data can then be accessed via environment variables. Our API has a /environment endpoint which returns the contents of the ENVIRONMENT_TYPE variable when set.
+
+To create a ConfigMap, we're going to use kubectl directly, as we're simply going to define a single variable. However, we could define several at once using a yml file.
+
+Run the following command:
+
+kubectl create configmap my-config-map --from-literal ENVIRONMENT_TYPE=production
+Check that the ConfigMap has been created in the GUI
+
+We now need to explain to Kubernetes that our Pods must use this ConfigMap.
+
+Delete the Deployment created previously, paste the following lines into a my-api2.yml file and then launch this new Deployment.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-sentiment-analysis-deployment
+  labels:
+    app: my-sentiment-analysis-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-sentiment-analysis-api
+  template:
+    metadata:
+      labels:
+        app: my-sentiment-analysis-api
+    spec:
+      containers:
+      - name: my-sentiment-analysis-api
+        image: datascientest/fake-api:1.0.0
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: my-config-map
+kubectl delete deployment my-sentiment-analysis-deployment
+kubectl create -f ../my-api2.yml 
+Once Deployment has been launched, we can return to the OpenAPI interface and try the /environment endpoint. You'll see that the variable has been passed.
+
+In the GUI, change the value of the ENVIRONMENT_TYPE key in the ConfigMap and check again the value returned by the /environment endpoint.
+
+We notice that the value has not changed. We need to restart the Pods for these changes to be taken into account.
+
+Execute the following command to relaunch our Pods.
+
+kubectl rollout restart deployment my-sentiment-analysis-deployment
+This time, the changes have been taken into account. Note that using a rollout restart prevents the service from being unavailable. Last but not least, we didn't need to restart the Service and the Ingress.
+
+f. Adding a Secret
+With the same idea of passing configuration data to several Pods at the same time, we're going to create a Secret here. As explained above, Secrets are used to encode configuration data.
+
+Create a Secret named my-secret which pairs key and value ('my-key', 'my-value').
+
+kubectl create secret generic my-secret --from-literal my-key=my-value
+Paste the following lines into a my-api3.yml file and run this Deployment instead of the previous one
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-sentiment-analysis-deployment
+  labels:
+    app: my-sentiment-analysis-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: my-sentiment-analysis-api
+  template:
+    metadata:
+      labels:
+        app: my-sentiment-analysis-api
+    spec:
+      containers:
+      - name: my-sentiment-analysis-api
+        image: datascientest/fake-api:1.0.0
+        ports:
+        - containerPort: 8000
+        env:
+        - name: ENVIRONMENT_TYPE
+          valueFrom:
+            secretKeyRef:
+              name: my-secret
+              key: my-key
+
+Here, we specify that containers take the value associated with the my-key key of the my-secret and define it as an environment variable named ENVIRONMENT_TYPE.
+
+There are many different ways of passing from Secret to a Deployment, but for the purposes of this exercise, we've kept to the simplest example.
+
+In this section, we've seen how to create a distributed application, expose it and pass data, particularly configuration data, securely or not.
