@@ -1,0 +1,244 @@
+4. Communication with containers
+In the previous sections, we have seen that virtualization allows processes or a host machine to be isolated from other processes. However, this isolation must not be hermetic but controlled. One may wish to communicate with the container. We will see in this part how to communicate with containers via the HTTP protocol.
+
+For this section, we will use an ElasticSearch image.
+
+Download the elasticsearch image with the 7.2.0 tag
+
+docker image pull elasticsearch:7.2.0
+Start an ElasticSearch instance with the following properties:
+
+in detached mode
+force deletion when the container is shut down
+the container name must be my_es_container
+an environment variable discovery.type must be set to single-node
+docker container run -d --rm -e "discovery.type=single-node" -p 9200:9200 --name my_es_container elasticsearch:7.2.0
+The ElasticSearch search engine exposes an API on port 9200 of the host machine on which it is running. This API can be accessed by making a HTTP request of type GET to the address http://localhost:9200.
+
+Run the following command to make this request
+
+curl -X GET -i http://localhost:9200
+This command generates an error: the address is not available. This is because the container has its own IP address that is not the machine's.
+
+  In computer networks, localhost refers to the machine's local network. This usually refers to a range of IP addresses. When used in an HTTP request, in most cases, this word refers to the first address in that range, namely 127.0.0.1.
+Using the docker container inspect command followed by the container's name, and filtering for the IPAddress field, we can see what IP address is assigned to this container.
+
+Run the following command to find the IP address of the container
+
+docker container inspect my_es_container | grep IPAddress
+If the container is the only one running, the IP address should be 172.17.0.2: the IP addresses are incremented by 1 from this IP address.
+
+Re-execute the previous command with the container address
+
+curl -X GET -i http://172.17.0.2:9200                      
+The following result should be obtained :
+
+HTTP/1.1 200 OK
+content-type: application/json; charset=UTF-8
+content-length: 508
+{
+  "name" : "eda03f03ebe4",
+  "cluster_name" : "docker-cluster",
+  "cluster_uuid" : "dtuY0R3nSOy9SRcP7j3FCw",
+  "version" : {
+    "number" : "7.2.0",
+    "build_flavor" : "default",
+    "build_type" : "docker",
+    "build_hash" : "508c38a",
+    "build_date" : "2019-06-20T15:54:18.811730Z",
+    "build_snapshot" : false,
+    "lucene_version" : "8.0.0",
+    "minimum_wire_compatibility_version" : "6.8.0",
+    "minimum_index_compatibility_version" : "6.0.0-beta1"
+  },
+  "tagline" : "You Know, for Search"
+}
+  The rest of this section goes into a lot of detail about container communication and is not necessary to understand these concepts. If you wish, you can refer directly to the conclusion of this part
+As a reminder, the container behaves like a virtual machine: it has its own ports, its own localhost network and its own local IPs. So if we use ElasticSearch without Docker, that is, if we install ElasticSearch directly on a machine, we can query the machine's ports, in this case port 9200 on address 127.0.0.1. In the case of a Docker container, the same thing happens inside the container: ElasticSearch is available at address 127.0.0.1:9200 inside the container.
+
+From the host machine's point of view, the container is given an IP address, which allows communication with the outside of the container. However, on the same ssh tunneling scheme, we can forward some of the container's ports to the host machine's ports using the -p or --port argument.
+
+Stop the my_es_container container
+
+docker container stop my_es_container
+We can now restart our container using this redirection.
+
+Run this command to forward ports 9200 and 9300 on the container to ports 9201 and 9301 on the host machine
+
+docker container run -d --rm\
+ -e "discovery.type=single-node"\
+ -p 9201:9200 -p 9301:9300\
+ --name my_es_container elasticsearch:7.2.0
+In our case, ElasticSearch is running on port 9200 on the container, which is forwarded to port 9201 on the host machine.
+
+Run the following command to address a query on port 9201 of the host machine
+
+curl -X GET -i http://127.0.0.1:9201
+We find our message. Let's now display the list of working containers:
+
+Run the following command to display the list of running containers
+
+docker container ls
+We can see that the information about our container has changed: we now have information about the redirections. If we try to restart a container on these ports, we will get an error:
+
+Run this command to try to restart a container on the same ports
+
+docker container run -d --rm\
+ -e "discovery.type=single-node"\
+ -p 9201:9200 -p 9301:9300\
+ --name my_es_container2 elasticsearch:7.2.0
+The ports of the host machine are already occupied so we cannot overload the machine. Now let's look at container-to-container communications. We'll use a "home-made" image that allows you to make an HTTP request from inside a container.
+
+Download the datascientest/curl:latest image
+
+docker image pull datascientest/curl:latest
+To start using this container, just run the following command :
+
+docker container run --rm datascientest/curl:latest http://example.org                    
+Here we make a HTTP request of type GET at address http://example.org. Let's try to make a request on port 9200 at address 127.0.0.1, i.e. as if we were inside the ElasticSearch container.
+
+Run the following command to make this request
+
+docker container run --rm datascientest/curl:latest http://127.0.0.1:9200                     
+The connection is denied. This is the address of the ElasticSearch API inside the ElasticSearch container, and is therefore not accessible from any other container. Now let's try a query on port 9201 from address 127.0.0.1.
+
+Run the following command to make this request
+
+docker container run --rm datascientest/curl:latest http://127.0.0.1:9201
+
+The connection is still refused. This is indeed the redirection address of the ElasticSearch container on the host machine and is not accessible from inside a container. Let's try to make this request on the real address of the ElasticSearch container 172.17.0.2:
+
+Run the following command to make this request
+
+# if the container address is not the same on your machine, change it
+docker container run --rm datascientest/curl:latest http://172.17.0.2:9200                       
+We now get the classical result. To understand how these communications work, we need to talk about the notion of network. Indeed, when we launch a container, it is assigned to a network. Containers on the same network can communicate "easily" with each other.
+
+We are going to make a list of networks:
+
+Run this command to display the list of networks
+
+docker network ls
+By default, there are only three networks: bridge, none and host. By default, the network used is the bridge network. It can be inspected using the command docker network inspect followed by the name of the network to inspect.
+
+Inspect the bridge network
+
+[
+    {
+        "Name": "bridge",
+        "Id": "8112c4b4784e4ffc83cfefd958cb88152781eef25799d4595be13aa43fef2b5f",
+        "Created": "2021-01-27T11:04:45.243012448+01:00",
+        "Scope": "local",
+        "Driver": "bridge",
+        "EnableIPv6": false,
+        "IPAM": {
+            "Driver": "default",
+            "Options": null,
+            "Config": [
+                {
+                    "Subnet": "172.17.0.0/16",
+                    "Gateway": "172.17.0.1"
+                }
+            ]
+        },
+        "Internal": false,
+        "Attachable": false,
+        "Ingress": false,
+        "ConfigFrom": {
+            "Network": ""
+        },
+        "ConfigOnly": false,
+        "Containers": {
+            "ce38a8de52d0c7b9d2863480d4440e78cbabe985371de3454a836cbb5c281f46": {
+                "Name": "my_es_container",
+                "EndpointID": "91cd3bb193de02f8c09c93caa5cce8f700a32b8196df258501b12880eedc8c7e",
+                "MacAddress": "02:42:ac:11:00:02",
+                "IPv4Address": "172.17.0.2/16",
+                "IPv6Address": ""
+            }
+        },
+        "Options": {
+            "com.docker.network.bridge.default_bridge": "true",
+            "com.docker.network.bridge.enable_icc": "true",
+            "com.docker.network.bridge.enable_ip_masquerade": "true",
+            "com.docker.network.bridge.host_binding_ipv4": "0.0.0.0",
+            "com.docker.network.bridge.name": "docker0",
+            "com.docker.network.driver.mtu": "1500"
+        },
+        "Labels": {}
+    }
+]
+We find several interesting pieces of information:
+
+general information about the name and the date of creation of the network
+information about the redirections that take place
+information about the containers running on this network
+In the IPAM key, for IP Address Management, we find the Subnet which is 172.17.0.0/16, that is to say that bridge can give to the containers it contains, addresses going from 172.17.0.2 to 172.17.255.255. Indeed the 172.17.0.1 address is the gateway used by the docker daemon to manage this subnet.
+
+Docker will distribute the available IPs in a network by incrementing the addresses by 1. We can create our own networks using the command docker network create.
+
+Run this command to create the network my_network.
+
+docker network create --subnet 172.50.0.0/16 --gateway 172.50.0.1 my_network
+Here, we have chosen to assign the address range 172.50.0.0 to 172.50.255.255 to this network.
+
+List the networks
+
+docker network ls
+Inspect the network my_network.
+
+docker network inspect my_network
+  Just as with containers or images, network IDs and names must be unique. They can be manipulated in the same way using the commands docker network create, docker network rm docker network ls , ...
+To specify on which network a container should be launched, we use the -n or --network argument followed by the network name.
+
+Run this cell to launch another ElasticSearch container on this network
+
+docker container run -d --rm\
+ -e "discovery.type=single-node"\
+ --network my_network\
+ --name my_es_container3 elasticsearch:7.2.0
+Inspect the network my_network.
+
+docker network inspect my_network
+We can see that the container works well on this network. The address given to this container is 172.50.0.2.
+
+Run the following command to make a request to this address from inside the bridge network
+
+docker container run datascientest/curl:latest http://172.50.0.2:9200                       
+The command expires. However, if you make the request from inside the my_network, the request terminates:
+
+Run the following command to make a request to this address from inside the my_network network
+
+docker container run --network my_network datascientest/curl:latest http://172.50.0.2:9200                       
+The address has been reached. Let's summarize the situation: a network is a subnet of the host machine. When a container is deployed on a network, it is assigned a local IP address of the host machine. The container is then reachable from the host machine. From inside the network, the container is reachable at this same address. But from inside another network, this IP address is not reachable.
+
+Note that assigned IP addresses are not fixed: if a container is stopped, it loses its address and may be assigned another IP address. To overcome this problem, we can use the names of the containers which will then act as domain names:
+
+Run this command to use the container name
+
+docker container run --network my_network datascientest/curl:latest http://my_es_container3:9200
+So far, we have seen that networks built on the bridge model are useful for creating spaces in which containers are relatively isolated. Using these networks judiciously allows us to control what communications take place between the different containers. And we have seen that container names can replace addresses for containers within the same network. Let's look at the host network.
+
+Stop all running containers
+
+The host network is a special network that allows no boundary between the container and the machine ports.
+
+Start an ElasticSearch container on this network, without specifying any redirection, and check that the container is working properly
+
+docker container run -d --rm\
+ -e "discovery.type=single-node"\
+ --network host\
+ --name my_es_container elasticsearch:7.2.0
+If we run the command docker network inspect host, we can see that it does not have the same characteristics as the other networks: no Subnet, no GateWay. If we inspect the container with the command docker container inspect my_es_container, we can see that it does not have the IP: its IP is in fact 127.0.0.1.
+
+Run a GET request with curl on port 9200 of the host machine
+
+curl -X GET -i http://127.0.0.1:9200                     
+Stop running containers
+
+The host network allows to facilitate the communications between the container and the host machine. However, it does not necessarily isolate the communications, which can present security problems. It does not work on machines running Mac or Windows operating systems, by the way.
+
+
+In this part, we have seen how containers communicate. By default, they are deployed on a bridge network. So they can see each other and communicate, either via their IP or via their name, which we will prefer to use. You can create different networks to isolate them from each other. We can also access these containers from the host machine by using their IP address given by Docker. Finally, we have seen that we can directly expose the ports of the machine using redirects or the host network.
+
+
