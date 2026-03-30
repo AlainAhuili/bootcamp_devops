@@ -1,0 +1,111 @@
+Docker
+5. Data persistence
+By default, Docker does not allow data persistence: the data created inside a container is eventually deleted when the container is stopped.
+
+Start an interactive instance of the ubuntu:latest container, named my_ubuntu. We can force the deletion at shutdown.
+
+docker container run --rm --name my_ubuntu -it ubuntu:latest
+We will write data to a file inside the container.
+
+Run this command to create the file
+
+echo "hello world from Docker" > /home/test.txt
+You can check the contents of the file using cat /home/test.txt then exit the container with exit. If you restart a container, you can't find the file.
+
+Re-launch the previous container and try to display the contents of the /home/test.txt file.
+
+This command generates an error: it is another image. The datascientest/time-keeper:latest image allows you to write the time to a file inside a container if that file does not already exist. If it does exist, the file is not created. In both cases, the result is printed.
+
+Run the following command
+
+docker run --name my_time_keeper datascientest/time-keeper:latest
+After a few seconds, let's run this container again
+
+docker start my_time_keeper
+In this case, we notice that the time has not changed. The file has been kept between the two starts of the container. However, keeping a stopped Docker container is not very economical in terms of disk space. To persist data between two launches, we prefer to use volumes. Volumes are folders that allow to store data. They are mounted (a bit like a USB key) on containers and continue to exist after the container has been stopped or even deleted.
+
+To create a volume, you can use the command docker volume create.
+
+Run this command to create a volume
+
+docker volume create my_volume
+Run this command to list the existing volumes
+
+docker volume ls 
+Inspect the volume my_volume.
+
+docker volume inspect my_volume
+In this volume inspection, we can see the creation date, its name, some attributes and its location: /var/lib/docker/volumes/my_volume/_data.
+
+You can mount a volume on a container using the --mount argument. To use this argument, you must specify:
+
+type: volume
+src: the name of the volume used
+dst: the destination folder inside the container
+Run this command to start a ubuntu container
+
+docker container run -it --name my_ubuntu\
+ --mount type=volume,src=my_volume,dst=/home/my_folder\
+ --rm\
+ ubuntu:latest bash
+Once in the container, run the following command to list the folders in /home
+
+ls /home
+There is a my_folder folder: it corresponds to the mount point of the volume.
+
+Run this command to create a file in the my_folder folder
+
+echo "hello world from Docker" > /home/my_folder/test.txt
+In another console, display the contents of the folder corresponding to the volume
+
+sudo ls /var/lib/docker/volumes/my_volume/_data
+sudo cat /var/lib/docker/volumes/my_volume/_data/test.txt
+The file corresponds to the one we have just created in the container. We can create a file from the machine and put it in this folder: it will appear in the container:
+
+From the machine
+
+echo "hello world from the host machine" > ~/test2.txt
+sudo mv ~/test2.txt /var/lib/docker/volumes/my_volume/_data/test2.txt
+From the container
+
+ls /home/my_folder
+cat /home/my_folder/test2.txt
+We can stop the container (exit). You can check the contents of the file /var/lib/docker/volumes/my_volume/_data but nothing has changed.
+
+In a console, restart a ubuntu container with the following command
+
+docker container run -it\
+ --name my_ubuntu1\
+ --mount type=volume,src=my_volume,dst=/home/my_folder1\
+ --rm\
+ ubuntu:latest bash
+In the same console, list the files in /home/my_folder1.
+
+The volume has kept the files created between two launches of the container.
+
+In another console, restart another ubuntu container with the following command
+
+docker container run -it\
+ --name my_ubuntu2\
+ --mount type=volume,src=my_volume,dst=/home/my_folder2\
+ --rm\
+ ubuntu:latest bash
+In the same console, list the files in /home/my_folder2.
+
+The volume is well shared between the two containers: volumes are a particularly interesting tool to share storage resources between containers. Moreover, they are difficult to reach from the host machine, especially because manipulating these folders from the host machine requires administrator rights.
+
+Stop the running containers
+
+Delete the volume my_volume by running the following command
+
+docker volume rm my_volume
+Another way to persist data and easily exchange files with the host machine is to use the --volume argument with a folder that already exists.
+
+For example, we can run the following command :
+
+docker container run -it\
+ --name my_ubuntu\
+ --volume $HOME:/home/my_folder\
+ --rm\
+ ubuntu:latest bash
+With this command, we link the $HOME folder on the host machine directly to the /home/my_folder folder in the container. This can be verified by listing the contents of this ls /home/my_folder folder. This technique is very convenient because one can easily move data in and out of the container from the host machine without having administrator rights. However, it is obviously less secure.
