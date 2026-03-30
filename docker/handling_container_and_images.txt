@@ -1,0 +1,203 @@
+Docker
+3. Handling containers and images
+In this section, we will explore the basic Docker commands using its command-line interface (docker-cli).
+
+  If you are using the proposed virtual machine, Docker is already installed. If you want to install Docker on your machine to take the course, you can follow the instructions available here.
+Once installed, we can launch the Docker daemon using the following command:
+
+Run this command to launch the Docker daemon
+
+sudo systemctl start docker
+When Docker is launched, we can launch our first container. For this, we will use a classic image: hello-world.
+
+Run this command to instantiate a hello-world image
+
+docker container run hello-world
+The following message should appear :
+
+Unable to find image 'hello-world:latest' locally
+latest: Pulling from library/hello-world
+0e03bdcc26d7: Pull complete 
+Digest: sha256:31b9c7d48790f0d8c50ab433d9c3b7e17666d6993084c002c2ff1ca09b96391d
+Status: Downloaded newer image for hello-world:latest
+Hello from Docker!
+This message shows that your installation appears to be working correctly.
+To generate this message, Docker took the following steps:
+ 1. The Docker client contacted the Docker daemon.
+ 2. The Docker daemon pulled the "hello-world" image from the Docker Hub.
+    (amd64)
+ 3. The Docker daemon created a new container from that image which runs the
+    executable that produces the output you are currently reading.
+ 4. The Docker daemon streamed that output to the Docker client, which sent it
+    to your terminal.
+To try something more ambitious, you can run an Ubuntu container with:
+ $ docker run -it ubuntu bash
+Share images, automate workflows, and more with a free Docker ID:
+ https://hub.docker.com/
+For more examples and ideas, visit:
+ https://docs.docker.com/get-started/
+We have successfully launched our first container! This image is not very interesting because it does not allow us to do anything else than display this message.
+
+Let's try to understand what happened. Using this command, we use docker-cli, that is to say the command line interface of Docker. We could have used another client (Python, JS, Docker Desktop, ... ) but this one is very simple to use. This client will directly contact the Docker daemon and ask it to launch a container based on the image whose name is hello-world (1). As this image is not available locally, the Docker daemon downloads this image from DockerHub (2). The Docker daemon then takes care of launching the container using this image as a guide (3). During the execution of the container, an output is produced which is then re-transmitted to the client, here the command line interface (4).
+
+Note that once these steps are completed the container is then stopped.
+
+If we want to restart an image of this same container, we can execute the same command:
+
+Re-execute this command
+
+docker container run hello-world
+If you pay attention, we lost part of the message. Indeed, the image having already been downloaded, the Docker daemon does not need to redo this download: it is saved locally.
+
+We can return the list of locally downloaded images by using the following command.
+
+Run this command to see the list of available images
+
+docker image ls
+For the moment, we have only one image available. We can see several pieces of information in this table:
+
+REPOSITORY: the name of the image
+TAG: a tag that allows us to differentiate between images that have the same name
+IMAGE ID: a unique identifier that identifies an image
+CREATED: the date the image was created
+SIZE: the size of the image
+When we create a Docker image, we give it a name that allows to identify it easily. We can also give it a tag or a label which allows us to differentiate different versions of the same image. If you don't specify a tag, Docker considers that the tag used is latest. For the same name, or even repository, you can have several different tags coexisting. Moreover, a unique id is assigned to it when the image is downloaded or created locally: the id corresponds to the hashed image.
+
+  We can use several syntaxes to manipulate objects with Docker's command line interface. For example, we can run a container using the docker run hello-world or docker container run hello-world commands. However, for the sake of clarity, we will choose to present only the syntax that introduces the object type docker container run ..., docker image ls, ...
+To download an image without running a container, we can use the docker image pull command. We will download an image of the Ubuntu distribution.
+
+Run this command to download the ubuntu image with the latest tag
+
+docker image pull ubuntu:latest
+Run this command to list the images on the machine
+
+docker image ls 
+We now have two images. Let's try to launch an instance of the ubuntu image:
+
+Run this command to launch an instance of the ubuntu:latest image.
+
+docker container run ubuntu:latest
+This command ends without producing any output. Indeed, a Docker container is not meant to run indefinitely. When we launch a container, a command is executed and when it ends, the container stops. We can choose to execute a command that allows us to interact with the container. In our case, we will use a bash console to interact with the inside of the container. To do this, we'll need to use the -it or --interactive argument and specify the tool to use.
+
+Run this command to launch an instance of ubuntu and interact with it
+
+docker container run -it ubuntu:latest
+We can see that we are in the container which behaves like a ubuntu machine. Here we are connected as a root. You can explore the interior of this container to see that we are dealing with a ubuntu system.
+
+In another console, we will display the list of running containers.
+
+Run this command to list all running containers
+
+docker container ls
+We can see our container represented by its characteristics:
+
+CONTAINER ID: the unique identifier of the container
+IMAGE: the name of the image used
+COMMAND: the command used to launch the container
+CREATED: the date the container was launched
+STATUS: the status of the container
+PORTS: the tunnels created between the machine and the container (more on this later)
+NAMES: a unique name used to easily identify the container
+Run the exit command from inside the container.
+
+Once this command is executed, the bash command is finished and the container stops.
+
+Re-execute this command to list the running containers
+
+docker container ls
+We don't see any container anymore. However, you can list the stopped containers by adding the -a or --all argument.
+
+Run this command to list all containers
+
+docker container ls --all
+We see the 4 containers launched earlier. Note that all these containers have a command to execute. The hello-world images use the command /hello. By default, the ubuntu container is started with the command /bin/bash.
+
+We can restart a stopped container by using the command docker start followed by the container name or id. For example, if the container is called practical_murdock (the names are randomly generated), we can run the following command:
+
+docker container start practical_murdock
+By default, restarting a stopped container is done in the background and displays neither the standard output nor the standard error. To redirect this output to the standard output of the machine, you can use the -a or --attach argument.
+
+Restart the first container of the hello-world image with the start command
+
+# Be careful to change the name of the container with yours !
+docker container start -a practical_murdock 
+The message is displayed, then the command ends and the container stops. If we display the stopped containers again, the creation date of the container does not change but its status has changed. You can't interact with a container that has already been stopped: in fact, Docker isn't really designed for this kind of situation. A container can be used several times if it performs a given task, but if you want to use a container to interact with it, you should use a new container.
+
+We can use the command docker container stop followed by the ID of a running container or its name to stop it. Let's try to reproduce this command:
+
+In a console, run the following command to start a container
+
+docker container run -it ubuntu:latest bash
+In another console, run the following command to display the running containers
+
+docker container ls
+In the same console, execute the following command to stop the container by its name
+
+# Be careful to change the name of the container with yours !
+docker container stop mystifying_matsumoto
+Check that the container has been stopped using the following command :
+
+docker container ls -a
+We now have some containers that are stopped. We can choose to delete these containers by using the command docker container rm followed by the name or ID of the stopped container.
+
+Delete stopped containers
+
+  Container names are randomly chosen from an adjective and a famous scientist's name. To choose a container name yourself, you can use the -n or --name argument followed by the container name. Be careful, however, not to name two containers in the same way: if you want to rename a container in the same way as another container, you must stop and then delete the first one.
+A container can be started in a detached way, i.e. in the background, by using the -d or --detach argument.
+
+In a command, run the following command to run a container in the background
+
+docker container run --detach --name my_ubuntu ubuntu:latest bash
+Only the container id is displayed in the console, but if you run the command docker container ls -a, you can see the container has started and ended.
+
+Stop and delete the container
+
+docker container stop my_ubuntu
+docker container rm my_ubuntu
+By adding the -rm or --remove argument, we can force the deletion of a container at shutdown.
+
+Re-launch this container with this new argument
+
+docker container run --rm --detach --name my_ubuntu ubuntu:latest bash
+Stop the container and verify that the container has been deleted
+
+docker container stop my_ubuntu
+docker container ls --all
+One of the last simple arguments you can use to start a container is -e. This argument allows you to create an environment variable. This is like defining a variable with an export for example. This command can be very useful for passing specific arguments to a container.
+
+Run the following command to run a container with a my_variable environment variable
+
+docker container run -it --rm --name my_ubuntu -e "my_variable='hello everyone'" ubuntu:latest bash
+Once in the container, run the following command to check the contents of the variable my_variable
+
+echo $my_variable
+Exit the container with the exit command (note that once you exit the container, the container is stopped and therefore deleted)
+
+In this part we have seen the basic commands to download an image and to launch a container. In the following table you will find a summary of the arguments used in this part.
+
+Argument	Use
+-it or --interactive	allows you to interact with the container via the command issued.
+-d or --detach	Allows you to launch the container in the background
+-n or --name	Allows you to choose the name of the container
+--rm	Force deletion of the container after it has stopped
+-e	Allows you to define an environment variable in the container
+The last command in this section allows you to see the properties of a container.
+
+Start a ubuntu container named my_ubuntu in the background. We will not force the deletion of the container when it is stopped
+
+docker container run -d --name my_ubuntu ubuntu:latest 
+You can use the command docker container inspect followed by the container id or name to be able to see the container properties:
+
+Run this command to inspect the container
+
+docker container inspect my_ubuntu
+This command returns a list in JSON format. This list contains only the my_ubuntu container but we could have inspected several containers at once. We'll see some of the container attributes in more detail, but for now we can see information about the status, the name, the id, ... We can also see the details of the image used.
+
+Stop the container
+
+Run the command to inspect the container
+
+docker container inspect my_ubuntu
+We can see that the content of this JSON has changed, especially the State attribute.
+
+  The structure of the docker ... inspect ... command. is a classic structure for inspecting the attributes of an object. For example, to see the attributes of an image, we can use docker image inspect hello-world. We can use the docker inspect ... command followed by an object name, but the former syntax is cleaner. We will see later that this command can be applied to all Docker objects.
