@@ -1,0 +1,64 @@
+services:
+
+  # API container 
+  api:
+    image: datascientest/fastapi:1.0.0
+    container_name: fastapi
+    ports:
+      - "8000:8000"
+    networks:
+      - test_network
+
+  # Test 1: Authentication
+  test_authentication:
+    image: fastapi-test-authentication:1.0.0
+    container_name: test_authentication
+    depends_on:
+      - api
+    networks:
+      - test_network
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+    volumes:
+      - test_logs:/logs
+
+  # Test 2: Authorization 
+  test_authorization:
+    image: fastapi-test-authorization:1.0.0
+    container_name: test_authorization
+    depends_on:
+      - api
+      - test_authentication
+    networks:
+      - test_network
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+    volumes:
+      - test_logs:/logs
+
+  # Test 3: Content 
+  test_content:
+    image: fastapi-test-content:1.0.0
+    container_name: test_content
+    depends_on:
+      - api
+      - test_authorization
+    networks:
+      - test_network
+    environment:
+      - API_ADDRESS=api
+      - API_PORT=8000
+      - LOG=1
+    volumes:
+      - test_logs:/logs
+
+networks:
+  test_network:
+    driver: bridge
+
+volumes:
+  test_logs:
